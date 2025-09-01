@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 영어사전 - LLM Dictionary Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            padding: 40px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 18px 60px 18px 20px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 4px 20px rgba(79, 172, 254, 0.2);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .search-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .filters {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4facfe;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .results {
+            padding: 20px 40px 40px;
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: #4facfe;
+        }
+
+        .word-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .word-title {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .pos-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .word-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .meta-badge {
+            background: #f0f2f5;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .score-high { background: #d4edda; color: #155724; }
+        .score-medium { background: #fff3cd; color: #856404; }
+        .score-low { background: #f8d7da; color: #721c24; }
+
+        .definition {
+            font-size: 16px;
+            color: #333;
+            margin: 15px 0;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .example {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #4facfe;
+            border-radius: 8px;
+            font-style: italic;
+            color: #555;
+            margin-top: 15px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .no-results-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .suggestion {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .suggestion-word {
+            color: #1976d2;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 5px;
+            text-decoration: underline;
+        }
+
+        .suggestion-word:hover {
+            color: #0d47a1;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .search-section {
+                padding: 20px;
+            }
+
+            .results {
+                padding: 20px;
+            }
+
+            .stats {
+                gap: 20px;
+            }
+
+            .word-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .word-title {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🤖 AI 영어사전</h1>
+        <p>LLM으로 생성한 4,869개 단어의 고품질 영어사전</p>
+    </div>
+
+    <div class="search-section">
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="영어 단어를 검색하세요..." autocomplete="off">
+            <button id="searchBtn" class="search-btn">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>품사</label>
+                <select id="posFilter" class="filter-select">
+                    <option value="">전체</option>
+                    <option value="noun">명사</option>
+                    <option value="verb">동사</option>
+                    <option value="adjective">형용사</option>
+                    <option value="adverb">부사</option>
+                    <option value="other">기타</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>단어 길이</label>
+                <select id="lengthFilter" class="filter-select">
+                    <option value="">전체</option>
+                    <option value="3-4">3-4글자</option>
+                    <option value="5-6">5-6글자</option>
+                    <option value="7-8">7-8글자</option>
+                    <option value="9+">9글자 이상</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>희귀도</label>
+                <select id="rarityFilter" class="filter-select">
+                    <option value="">전체</option>
+                    <option value="1">매우 흔함</option>
+                    <option value="2">흔함</option>
+                    <option value="3">보통</option>
+                    <option value="4+">희귀</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-number" id="totalWords">4,869</div>
+            <div class="stat-label">총 단어 수</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="searchResults">0</div>
+            <div class="stat-label">검색 결과</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="avgScore">0.85</div>
+            <div class="stat-label">평균 점수</div>
+        </div>
+    </div>
+
+    <div class="results" id="results">
+        <div class="no-results">
+            <div class="no-results-icon">📚</div>
+            <h3>검색어를 입력하여 단어를 찾아보세요</h3>
+            <p>영어 단어나 한글 의미로 검색할 수 있습니다</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 사전 데이터를 저장할 변수
+    let dictionaryData = [];
+    let currentResults = [];
+
+    // 파일 업로드 함수
+    window.loadDictionaryFile = function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                console.log('파일 선택됨:', file.name, file.size, 'bytes');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        console.log('파일 읽기 완료, 크기:', e.target.result.length);
+                        const data = JSON.parse(e.target.result);
+                        console.log('JSON 파싱 완료, 구조:', Object.keys(data));
+
+                        // 실제 단어 데이터 추출
+                        let loadedWords = [];
+
+                        if (data.entries && Array.isArray(data.entries)) {
+                            loadedWords = data.entries;
+                            console.log('entries에서 로드:', loadedWords.length, '개');
+                        } else if (data.words && Array.isArray(data.words)) {
+                            loadedWords = data.words;
+                            console.log('words에서 로드:', loadedWords.length, '개');
+                        } else if (Array.isArray(data)) {
+                            loadedWords = data;
+                            console.log('배열에서 로드:', loadedWords.length, '개');
+                        } else {
+                            console.error('지원하지 않는 JSON 구조:', data);
+                            showMessage('지원하지 않는 파일 구조입니다.', 'error');
+                            return;
+                        }
+
+                        if (loadedWords.length === 0) {
+                            console.error('단어 데이터가 비어있습니다');
+                            showMessage('단어 데이터가 비어있습니다.', 'error');
+                            return;
+                        }
+
+                        // 전역 변수에 할당 (테스트 데이터 제거)
+                        dictionaryData = loadedWords;
+                        console.log('데이터 로드 완료:', dictionaryData.length, '개');
+
+                        // 첫 번째 항목 샘플 출력
+                        if (dictionaryData.length > 0) {
+                            console.log('첫 번째 단어 샘플:', dictionaryData[0]);
+                            console.log('마지막 단어 샘플:', dictionaryData[dictionaryData.length - 1]);
+                        }
+
+                        updateStats();
+                        showMessage(`사전 파일이 성공적으로 로드되었습니다! (${dictionaryData.length}개 단어)`, 'success');
+
+                        // 로드 후 기본 화면으로 전환
+                        document.getElementById('results').innerHTML = `
+                                <div class="no-results">
+                                    <div class="no-results-icon">📚</div>
+                                    <h3>검색어를 입력하여 단어를 찾아보세요</h3>
+                                    <p>영어 단어나 한글 의미로 검색할 수 있습니다</p>
+                                    <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                                        총 ${dictionaryData.length}개 단어가 로드되었습니다
+                                    </p>
+                                </div>
+                            `;
+
+                    } catch (error) {
+                        console.error('JSON 파싱 에러:', error);
+                        showMessage('파일 형식이 올바르지 않습니다: ' + error.message, 'error');
+                    }
+                };
+                reader.onerror = function(e) {
+                    console.error('파일 읽기 에러:', e);
+                    showMessage('파일을 읽을 수 없습니다.', 'error');
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    };
+
+    // 메시지 표시 함수
+    function showMessage(text, type) {
+        const suggestion = document.createElement('div');
+        suggestion.className = 'suggestion';
+        suggestion.style.background = type === 'error' ? '#ffebee' : '#e8f5e8';
+        suggestion.style.borderColor = type === 'error' ? '#ffcdd2' : '#c8e6c8';
+        suggestion.innerHTML = text;
+
+        const results = document.getElementById('results');
+        results.insertBefore(suggestion, results.firstChild);
+
+        setTimeout(() => suggestion.remove(), 3000);
+    }
+
+    // 서버에서 JSON 파일 자동 로드
+    window.loadFromServer = function() {
+        const fileName = 'llm_dictionary_2letter_20250812_000751.json';
+        console.log('서버에서 파일 로드 시도:', fileName);
+
+        showMessage('서버에서 사전 파일을 불러오는 중...', 'info');
+
+        fetch(fileName)
+            .then(response => {
+                console.log('응답 상태:', response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('JSON 파싱 완료, 구조:', Object.keys(data));
+
+                let loadedWords = [];
+                if (data.entries && Array.isArray(data.entries)) {
+                    loadedWords = data.entries;
+                    console.log('entries에서 로드:', loadedWords.length, '개');
+                } else if (data.words && Array.isArray(data.words)) {
+                    loadedWords = data.words;
+                    console.log('words에서 로드:', loadedWords.length, '개');
+                } else if (Array.isArray(data)) {
+                    loadedWords = data;
+                    console.log('배열에서 로드:', loadedWords.length, '개');
+                } else {
+                    throw new Error('지원하지 않는 JSON 구조입니다');
+                }
+
+                if (loadedWords.length === 0) {
+                    throw new Error('단어 데이터가 비어있습니다');
+                }
+
+                dictionaryData = loadedWords;
+                console.log('서버에서 데이터 로드 완료:', dictionaryData.length, '개');
+
+                if (dictionaryData.length > 0) {
+                    console.log('첫 번째 단어:', dictionaryData[0]);
+                    console.log('마지막 단어:', dictionaryData[dictionaryData.length - 1]);
+                }
+
+                updateStats();
+                showMessage(`🎉 서버에서 ${loadedWords.length}개 단어를 성공적으로 로드했습니다!`, 'success');
+
+                document.getElementById('results').innerHTML = `
+                        <div class="no-results">
+                            <div class="no-results-icon">📚</div>
+                            <h3>검색어를 입력하여 단어를 찾아보세요</h3>
+                            <p>영어 단어나 한글 의미로 검색할 수 있습니다</p>
+                            <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                                서버에서 ${dictionaryData.length}개 단어가 로드되었습니다
+                            </p>
+                        </div>
+                    `;
+            })
+            .catch(error => {
+                console.error('서버 로드 실패:', error);
+                let errorMsg = '서버에서 파일을 불러올 수 없습니다';
+
+                if (error.message.includes('HTTP 404')) {
+                    errorMsg += ' (파일을 찾을 수 없음)';
+                } else if (error.message.includes('CORS')) {
+                    errorMsg += ' (CORS 정책 오류)';
+                } else if (error.message.includes('JSON')) {
+                    errorMsg += ' (JSON 형식 오류)';
+                }
+
+                showMessage(errorMsg + ': ' + error.message, 'error');
+            });
+    };
+    window.loadFromText = function() {
+        const textarea = document.createElement('textarea');
+        textarea.style.cssText = `
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                width: 80%; height: 60%; z-index: 10000; background: white;
+                border: 2px solid #4facfe; border-radius: 10px; padding: 20px;
+                font-family: monospace; font-size: 12px;
+            `;
+        textarea.placeholder = 'JSON 파일 내용을 여기에 붙여넣기...';
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.7); z-index: 9999;
+            `;
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '취소';
+        closeBtn.style.cssText = `
+                position: absolute; top: 10px; right: 60px;
+                background: #ff4757; color: white; border: none;
+                padding: 8px 16px; border-radius: 5px; cursor: pointer;
+            `;
+
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = '로드';
+        loadBtn.style.cssText = `
+                position: absolute; top: 10px; right: 10px;
+                background: #4facfe; color: white; border: none;
+                padding: 8px 16px; border-radius: 5px; cursor: pointer;
+            `;
+
+        closeBtn.onclick = () => document.body.removeChild(overlay);
+        loadBtn.onclick = () => {
+            try {
+                const data = JSON.parse(textarea.value);
+                let loadedWords = data.entries || data.words || (Array.isArray(data) ? data : []);
+
+                if (loadedWords.length === 0) {
+                    alert('단어 데이터를 찾을 수 없습니다.');
+                    return;
+                }
+
+                dictionaryData = loadedWords;
+                updateStats();
+                showMessage(`${loadedWords.length}개 단어 로드 성공!`, 'success');
+                document.body.removeChild(overlay);
+
+                document.getElementById('results').innerHTML = `
+                        <div class="no-results">
+                            <div class="no-results-icon">📚</div>
+                            <h3>검색어를 입력하여 단어를 찾아보세요</h3>
+                            <p>총 ${dictionaryData.length}개 단어가 로드되었습니다</p>
+                        </div>
+                    `;
+
+            } catch (e) {
+                alert('JSON 형식이 올바르지 않습니다: ' + e.message);
+            }
+        };
+
+        textarea.appendChild(closeBtn);
+        textarea.appendChild(loadBtn);
+        overlay.appendChild(textarea);
+        document.body.appendChild(overlay);
+    };
+
+    // 통계 업데이트
+    function updateStats() {
+        document.getElementById('totalWords').textContent = dictionaryData.length.toLocaleString();
+        document.getElementById('searchResults').textContent = currentResults.length.toLocaleString();
+
+        if (dictionaryData.length > 0) {
+            const avgScore = dictionaryData.reduce((sum, word) => sum + (word.score || 0), 0) / dictionaryData.length;
+            document.getElementById('avgScore').textContent = avgScore.toFixed(2);
+        }
+    }
+
+    // 검색 함수
+    function search() {
+        const query = document.getElementById('searchInput').value.trim().toLowerCase();
+        const posFilter = document.getElementById('posFilter').value;
+        const lengthFilter = document.getElementById('lengthFilter').value;
+        const rarityFilter = document.getElementById('rarityFilter').value;
+
+        console.log('검색 시작:', {query, posFilter, lengthFilter, rarityFilter, totalWords: dictionaryData.length});
+
+        if (!query) {
+            displayResults([]);
+            return;
+        }
+
+        if (dictionaryData.length === 0) {
+            showMessage('사전 데이터가 로드되지 않았습니다. JSON 파일을 먼저 업로드해주세요.', 'error');
+            return;
+        }
+
+        // 로딩 표시
+        showLoading();
+
+        setTimeout(() => {
+            let results = dictionaryData.filter(word => {
+                // 텍스트 검색 (단어, 정의, 예문에서)
+                const matchesText = word.word.toLowerCase().includes(query) ||
+                    (word.definition && word.definition.toLowerCase().includes(query)) ||
+                    (word.example && word.example.toLowerCase().includes(query));
+
+                // 필터 조건 확인
+                const matchesPos = !posFilter || word.pos === posFilter;
+
+                const matchesLength = !lengthFilter || (() => {
+                    const len = word.length || word.word.length;
+                    switch(lengthFilter) {
+                        case '3-4': return len >= 3 && len <= 4;
+                        case '5-6': return len >= 5 && len <= 6;
+                        case '7-8': return len >= 7 && len <= 8;
+                        case '9+': return len >= 9;
+                        default: return true;
+                    }
+                })();
+
+                const matchesRarity = !rarityFilter || (() => {
+                    const rarity = word.rarity || 3;
+                    if (rarityFilter === '4+') return rarity >= 4;
+                    return rarity === parseInt(rarityFilter);
+                })();
+
+                return matchesText && matchesPos && matchesLength && matchesRarity;
+            });
+
+            console.log('검색 결과:', results.length, '개');
+            if (results.length > 0) {
+                console.log('첫 번째 결과:', results[0]);
+            }
+
+            // 점수와 관련성으로 정렬
+            results.sort((a, b) => {
+                // 완전 일치가 우선
+                const aExact = a.word.toLowerCase() === query;
+                const bExact = b.word.toLowerCase() === query;
+                if (aExact && !bExact) return -1;
+                if (!aExact && bExact) return 1;
+
+                // 단어 시작 부분 일치가 다음 우선순위
+                const aStarts = a.word.toLowerCase().startsWith(query);
+                const bStarts = b.word.toLowerCase().startsWith(query);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+
+                // 그다음은 점수순
+                return (b.score || 0) - (a.score || 0);
+            });
+
+            currentResults = results;
+            displayResults(results.slice(0, 50)); // 최대 50개 결과만 표시
+            updateStats();
+
+            // 검색 제안
+            if (results.length === 0) {
+                showSuggestions(query);
+            }
+        }, 100);
+    }
+
+    // 로딩 표시
+    function showLoading() {
+        document.getElementById('results').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>검색 중...</p>
+                </div>
+            `;
+    }
+
+    // 검색 제안
+    function showSuggestions(query) {
+        const suggestions = dictionaryData
+            .filter(word => {
+                const similarity = getSimilarity(query, word.word.toLowerCase());
+                return similarity > 0.4;
+            })
+            .sort((a, b) => getSimilarity(query, b.word.toLowerCase()) - getSimilarity(query, a.word.toLowerCase()))
+            .slice(0, 5)
+            .map(word => word.word);
+
+        if (suggestions.length > 0) {
+            const suggestionDiv = document.createElement('div');
+            suggestionDiv.className = 'suggestion';
+            suggestionDiv.innerHTML = `
+                    <p><strong>이런 단어를 찾으시나요?</strong></p>
+                    ${suggestions.map(word => `<span class="suggestion-word" onclick="searchWord('${word}')">${word}</span>`).join('')}
+                `;
+            document.getElementById('results').appendChild(suggestionDiv);
+        }
+    }
+
+    // 문자열 유사도 계산 (간단한 버전)
+    function getSimilarity(str1, str2) {
+        const longer = str1.length > str2.length ? str1 : str2;
+        const shorter = str1.length > str2.length ? str2 : str1;
+
+        if (longer.length === 0) return 1.0;
+
+        return (longer.length - editDistance(longer, shorter)) / longer.length;
+    }
+
+    // 편집 거리 계산
+    function editDistance(str1, str2) {
+        const matrix = [];
+        for (let i = 0; i <= str2.length; i++) {
+            matrix[i] = [i];
+        }
+        for (let j = 0; j <= str1.length; j++) {
+            matrix[0][j] = j;
+        }
+        for (let i = 1; i <= str2.length; i++) {
+            for (let j = 1; j <= str1.length; j++) {
+                if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
+                    );
+                }
+            }
+        }
+        return matrix[str2.length][str1.length];
+    }
+
+    // 제안된 단어로 검색
+    window.searchWord = function(word) {
+        document.getElementById('searchInput').value = word;
+        search();
+    };
+
+    // 결과 표시
+    function displayResults(results) {
+        const resultsContainer = document.getElementById('results');
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">🔍</div>
+                        <h3>검색 결과가 없습니다</h3>
+                        <p>다른 검색어를 시도해보세요</p>
+                    </div>
+                `;
+            return;
+        }
+
+        resultsContainer.innerHTML = results.map(word => {
+            const scoreClass = word.score >= 0.8 ? 'score-high' :
+                word.score >= 0.6 ? 'score-medium' : 'score-low';
+
+            return `
+                    <div class="result-item">
+                        <div class="word-header">
+                            <div class="word-title">${word.word}</div>
+                            <div class="pos-tag">${word.pos || 'unknown'}</div>
+                        </div>
+                        <div class="word-meta">
+                            <span class="meta-badge ${scoreClass}">점수: ${(word.score || 0).toFixed(2)}</span>
+                            <span class="meta-badge">길이: ${word.length || word.word.length}글자</span>
+                            <span class="meta-badge">희귀도: ${word.rarity || 'N/A'}</span>
+                            <span class="meta-badge">신뢰도: ${((word.confidence || 0) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="definition">${word.definition || '정의가 없습니다'}</div>
+                        ${word.example ? `<div class="example">"${word.example}"</div>` : ''}
+                    </div>
+                `;
+        }).join('');
+    }
+
+    // 이벤트 리스너 설정
+    document.getElementById('searchInput').addEventListener('input', search);
+    document.getElementById('searchBtn').addEventListener('click', search);
+    document.getElementById('posFilter').addEventListener('change', search);
+    document.getElementById('lengthFilter').addEventListener('change', search);
+    document.getElementById('rarityFilter').addEventListener('change', search);
+
+    // Enter 키 처리
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            search();
+        }
+    });
+
+    // 초기화 시 테스트 데이터와 파일 로드 안내
+    window.addEventListener('load', function() {
+        console.log('페이지 로드 완료');
+
+        // 빈 상태로 시작
+        dictionaryData = [];
+        updateStats();
+
+        document.getElementById('results').innerHTML = `
+                <div class="no-results">
+                    <div class="no-results-icon">📁</div>
+                    <h3>사전 파일을 로드해주세요</h3>
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+                        <button onclick="loadFromServer()" style="
+                            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+                            color: white; border: none; padding: 12px 20px; border-radius: 25px;
+                            cursor: pointer; font-size: 15px; transition: all 0.3s ease;
+                            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            🚀 서버에서 자동 로드
+                        </button>
+                        <button onclick="loadDictionaryFile()" style="
+                            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                            color: white; border: none; padding: 12px 20px; border-radius: 25px;
+                            cursor: pointer; font-size: 15px; transition: all 0.3s ease;
+                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            📁 파일 선택
+                        </button>
+                        <button onclick="loadFromText()" style="
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white; border: none; padding: 12px 20px; border-radius: 25px;
+                            cursor: pointer; font-size: 15px; transition: all 0.3s ease;
+                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            📝 텍스트 붙여넣기
+                        </button>
+                    </div>
+                    <p style="margin-top: 15px; color: #888; font-size: 14px; text-align: center;">
+                        <strong>🚀 서버에서 자동 로드</strong>를 먼저 시도해보세요!<br>
+                        <span style="font-size: 12px; color: #999;">
+                            같은 폴더의 llm_dictionary_2letter_20250812_000751.json 파일을 자동으로 불러옵니다
+                        </span>
+                    </p>
+                </div>
+            `;
+    });
+</script>
+</body>
+</html>
