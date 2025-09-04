@@ -155,8 +155,16 @@
         .word-definition {
             font-size: 17px; /* 정의를 읽기 좋게 */
             line-height: 1.6;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             color: #E0E0E0;
+        }
+
+        .word-definition-ko {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            color: #C8E6C9; /* 한국어 뜻은 연두색으로 구분 */
+            font-weight: 500;
         }
 
         .word-example {
@@ -166,6 +174,16 @@
             border-left: 3px solid #64B5F6; /* 예문 왼쪽에 구분선 */
             padding-left: 10px;
             margin-top: 8px;
+            margin-bottom: 6px;
+        }
+
+        .word-example-ko {
+            font-size: 14px;
+            color: #A5D6A7; /* 한국어 예문도 연두색 계열 */
+            font-style: italic;
+            border-left: 3px solid #81C784;
+            padding-left: 10px;
+            margin-top: 4px;
         }
 
         .no-results {
@@ -242,9 +260,9 @@
     </div>
 
     <div class="lang-selectors">
-        <button class="lang-button active">English</button>
-        <button class="lang-swap material-icons">swap_horiz</button>
-        <button class="lang-button">Korean</button>
+        <button class="lang-button active" id="langFrom">English</button>
+        <button class="lang-swap material-icons" onclick="swapLanguages()">swap_horiz</button>
+        <button class="lang-button" id="langTo">Korean</button>
     </div>
 
     <div class="input-area">
@@ -256,6 +274,7 @@
 
     <script>
         let dictionaryData = [];
+        let currentDirection = 'en-ko'; // 'en-ko' 또는 'ko-en'
 
         function showMessage(text, type) {
             const toast = document.createElement('div');
@@ -264,11 +283,42 @@
             document.body.appendChild(toast);
             setTimeout(() => {
                 toast.classList.add('show');
-            }, 10); // 약간의 지연 후 show 클래스 추가
+            }, 10);
             setTimeout(() => {
                 toast.classList.remove('show');
                 toast.addEventListener('transitionend', () => toast.remove());
             }, 3000);
+        }
+
+        function swapLanguages() {
+            const langFrom = document.getElementById('langFrom');
+            const langTo = document.getElementById('langTo');
+            
+            if (currentDirection === 'en-ko') {
+                langFrom.textContent = 'Korean';
+                langTo.textContent = 'English';
+                currentDirection = 'ko-en';
+            } else {
+                langFrom.textContent = 'English';
+                langTo.textContent = 'Korean';
+                currentDirection = 'en-ko';
+            }
+            
+            // 활성 버튼 스타일 업데이트
+            langFrom.classList.add('active');
+            langTo.classList.remove('active');
+            
+            // 검색어가 있으면 재검색
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput.value.trim() && dictionaryData.length > 0) {
+                searchDictionary();
+            }
+            
+            // 플레이스홀더 업데이트
+            if (dictionaryData.length > 0) {
+                searchInput.placeholder = currentDirection === 'en-ko' ? 
+                    '영어 단어를 입력하세요...' : '한국어 뜻을 입력하세요...';
+            }
         }
 
         function processAndLoadData(loadedWords) {
@@ -284,13 +334,14 @@
             
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('input', searchDictionary);
-            searchInput.placeholder = "검색할 단어를 입력하세요...";
+            searchInput.placeholder = currentDirection === 'en-ko' ? 
+                '영어 단어를 입력하세요...' : '한국어 뜻을 입력하세요...';
         }
 
         window.loadFromServer = async function() {
             showMessage('서버에서 사전 파일을 불러오는 중...', 'info');
             try {
-                const response = await fetch('llm_dictionary_2letter_20250812_000751.json'); // 실제 파일명 확인 필요
+                const response = await fetch('sample_dict_20250904_104338.json'); // JSON 파일명 수정
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 processAndLoadData(data.entries || []);
@@ -335,11 +386,11 @@
         };
 
         function searchDictionary() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             const resultsList = document.getElementById('resultsList');
             const noResultsDiv = document.getElementById('noResults');
 
-            if (!resultsList || !dictionaryData.length) { // 데이터 로드 및 존재 여부 확인
+            if (!resultsList || !dictionaryData.length) {
                 if (noResultsDiv) noResultsDiv.style.display = 'block';
                 return; 
             }
@@ -351,21 +402,51 @@
                 return;
             }
 
-            const filteredResults = dictionaryData.filter(entry => 
-                (entry.word && entry.word.toLowerCase().includes(searchTerm)) ||
-                (entry.definition && entry.definition.toLowerCase().includes(searchTerm))
-            ).slice(0, 50);
+            let filteredResults;
+            
+            if (currentDirection === 'en-ko') {
+                // 영어 -> 한국어 검색
+                filteredResults = dictionaryData.filter(entry => 
+                    (entry.word && entry.word.toLowerCase().includes(searchTerm)) ||
+                    (entry.definition && entry.definition.toLowerCase().includes(searchTerm))
+                );
+            } else {
+                // 한국어 -> 영어 검색
+                filteredResults = dictionaryData.filter(entry => 
+                    (entry.definition_ko && entry.definition_ko.includes(searchTerm)) ||
+                    (entry.example_ko && entry.example_ko.includes(searchTerm))
+                );
+            }
+
+            filteredResults = filteredResults.slice(0, 50);
 
             if (filteredResults.length > 0) {
                 filteredResults.forEach(entry => {
                     const resultItem = document.createElement('div');
                     resultItem.classList.add('result-item');
-                    resultItem.innerHTML = `
-                        <div class="word-title">${entry.word || ''} <span class="material-icons" style="font-size: 20px; cursor: pointer;">volume_up</span></div>
-                        <div class="word-pos">${entry.pos || ''}</div>
-                        <div class="word-definition">${entry.definition || ''}</div>
-                        ${entry.example ? `<div class="word-example">"${entry.example}"</div>` : ''}
-                    `;
+                    
+                    if (currentDirection === 'en-ko') {
+                        // 영어 -> 한국어 표시
+                        resultItem.innerHTML = `
+                            <div class="word-title">${entry.word || ''} <span class="material-icons" style="font-size: 20px; cursor: pointer;">volume_up</span></div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            <div class="word-definition">${entry.definition || ''}</div>
+                            ${entry.definition_ko ? `<div class="word-definition-ko">${entry.definition_ko}</div>` : ''}
+                            ${entry.example ? `<div class="word-example">"${entry.example}"</div>` : ''}
+                            ${entry.example_ko ? `<div class="word-example-ko">"${entry.example_ko}"</div>` : ''}
+                        `;
+                    } else {
+                        // 한국어 -> 영어 표시
+                        resultItem.innerHTML = `
+                            <div class="word-title">${entry.word || ''} <span class="material-icons" style="font-size: 20px; cursor: pointer;">volume_up</span></div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            <div class="word-definition-ko">${entry.definition_ko || ''}</div>
+                            ${entry.definition ? `<div class="word-definition">${entry.definition}</div>` : ''}
+                            ${entry.example_ko ? `<div class="word-example-ko">"${entry.example_ko}"</div>` : ''}
+                            ${entry.example ? `<div class="word-example">"${entry.example}"</div>` : ''}
+                        `;
+                    }
+                    
                     resultsList.appendChild(resultItem);
                 });
                 noResultsDiv.style.display = 'none';
@@ -410,7 +491,6 @@
                     reader.readAsText(file);
                 }
             });
-            // 초기에는 검색 입력창에 이벤트 리스너를 연결하지 않음
         });
     </script>
 </body>
