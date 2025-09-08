@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English-Japanese Dictionary</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* CSS Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+        }
+
+        body {
+            background-color: #1A1A1A;
+            color: #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            background-color: #121212;
+            color: #E0E0E0;
+            border-bottom: 1px solid #333333;
+        }
+
+        .top-bar .title {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        /* Language Selectors */
+        .lang-selectors {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            background-color: #1A1A1A;
+        }
+
+        .lang-button {
+            flex: 1;
+            max-width: 150px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            background-color: #2E2E2E;
+            color: #E0E0E0;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .lang-button.active {
+            background-color: #3F51B5;
+            color: white;
+        }
+
+        .lang-swap {
+            background: none;
+            border: none;
+            color: #9E9E9E;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .lang-swap:hover {
+            background-color: #333333;
+        }
+
+        /* Input Area */
+        .input-area {
+            flex-grow: 1;
+            padding: 0 16px 16px 16px;
+            background-color: #1A1A1A;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+        }
+        
+        .text-input {
+            width: 100%;
+            min-height: 120px;
+            background-color: #1A1A1A;
+            color: #E0E0E0;
+            border: none;
+            font-size: 24px;
+            padding: 12px 0;
+            resize: none;
+            outline: none;
+        }
+
+        /* Results / Output Area */
+        .results-container {
+            flex-grow: 1;
+            padding: 16px;
+            background-color: #1A1A1A;
+            min-height: 200px;
+        }
+        
+        .result-item {
+            background-color: #2E2E2E;
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease-in-out;
+        }
+        .result-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .word-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #BBDEFB;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .word-title .material-icons {
+            font-size: 20px;
+            margin-left: 10px;
+            color: #9E9E9E;
+            cursor: pointer;
+        }
+
+        .word-pos {
+            font-size: 16px;
+            color: #BBDEFB;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .word-definition {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            color: #E0E0E0;
+        }
+
+
+        .word-example {
+            font-size: 16px;
+            color: #B0B0B0;
+            font-style: italic;
+            border-left: 3px solid #64B5F6;
+            padding-left: 12px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+
+        .word-example-target {
+            font-size: 15px;
+            color: #FFABAB;
+            font-style: italic;
+            border-left: 3px solid #FF8A95;
+            padding-left: 12px;
+            margin-top: 6px;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        .metadata-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .confidence-score {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .rarity-score {
+            color: #FF9800;
+            font-weight: 600;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #9E9E9E;
+            padding: 20px;
+        }
+
+        /* Statistics Display */
+        .stats-container {
+            background-color: #2E2E2E;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stats-title {
+            font-size: 18px;
+            color: #BBDEFB;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            background-color: #3A3A3A;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #FFB3BA;
+            font-size: 16px;
+        }
+
+        .stat-label {
+            color: #CCCCCC;
+            font-size: 12px;
+        }
+
+        /* File Load Options UI */
+        .load-options-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+            height: 100%;
+            padding-top: 50px;
+        }
+        .load-button {
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 80%;
+            max-width: 300px;
+            justify-content: center;
+        }
+        .load-button:hover {
+            transform: scale(1.05);
+        }
+        .server-load-btn { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
+        .file-load-btn { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .text-load-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+
+        /* Message Toast Styling */
+        .message-toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            z-index: 2000;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-toast.show {
+            opacity: 1;
+        }
+        .message-toast.success { background-color: #4CAF50; }
+        .message-toast.error { background-color: #F44336; }
+        .message-toast.info { background-color: #2196F3; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="title">English-Japanese Dictionary</div>
+    </div>
+
+    <div class="lang-selectors">
+        <button class="lang-button active" id="langFrom">English</button>
+        <button class="lang-swap material-icons" onclick="swapLanguages()">swap_horiz</button>
+        <button class="lang-button" id="langTo">日本語</button>
+    </div>
+
+    <div class="input-area">
+        <textarea id="searchInput" class="text-input" placeholder="辞書データを先に読み込んでください。"></textarea>
+    </div>
+
+    <div class="results-container" id="resultsContainer">
+    </div>
+
+    <script>
+        let dictionaryData = [];
+        let dictionaryMetadata = null;
+        let currentDirection = 'en-ja'; // 'en-ja' or 'ja-en'
+
+        function showMessage(text, type) {
+            const toast = document.createElement('div');
+            toast.className = `message-toast ${type}`;
+            toast.textContent = text;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        function swapLanguages() {
+            const langFrom = document.getElementById('langFrom');
+            const langTo = document.getElementById('langTo');
+            
+            if (currentDirection === 'en-ja') {
+                langFrom.textContent = '日本語';
+                langTo.textContent = 'English';
+                currentDirection = 'ja-en';
+            } else {
+                langFrom.textContent = 'English';
+                langTo.textContent = '日本語';
+                currentDirection = 'en-ja';
+            }
+            
+            langFrom.classList.add('active');
+            langTo.classList.remove('active');
+            
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput.value.trim() && dictionaryData.length > 0) {
+                searchDictionary();
+            }
+            
+            if (dictionaryData.length > 0) {
+                searchInput.placeholder = currentDirection === 'en-ja' ? 
+                    'Type English words...' : '日本語で検索...';
+            }
+        }
+
+        function processAndLoadData(loadedData) {
+            if (!loadedData) {
+                showMessage('データが空または無効です。', 'error');
+                return;
+            }
+            
+            // Process new JSON structure
+            if (loadedData.entries && Array.isArray(loadedData.entries)) {
+                dictionaryData = loadedData.entries;
+                dictionaryMetadata = loadedData.metadata;
+            } else if (Array.isArray(loadedData)) {
+                dictionaryData = loadedData;
+            } else {
+                showMessage('サポートされていないデータ形式です。', 'error');
+                return;
+            }
+            
+            showMessage(`辞書ファイル読み込み完了! (${dictionaryData.length}語)`, 'success');
+            
+            displayDictionaryInterface();
+        }
+
+        function displayDictionaryInterface() {
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            let interfaceHTML = '';
+            
+            interfaceHTML += '<div id="resultsList"></div><div id="noResults" class="no-results" style="display: none;">No results found.</div>';
+            
+            resultsContainer.innerHTML = interfaceHTML;
+            
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', searchDictionary);
+            searchInput.placeholder = currentDirection === 'en-ja' ? 
+                'Type English words...' : '日本語で検索...';
+        }
+
+        window.loadFromServer = async function() {
+            showMessage('サーバーから辞書ファイルを読み込み中...', 'info');
+            try {
+                const response = await fetch('dict_ja_alpha_with_wordja_v3.json');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                processAndLoadData(data);
+            } catch (error) {
+                console.error('Error loading from server:', error);
+                showMessage(`サーバー読み込み失敗: ${error.message}`, 'error');
+            }
+        };
+
+        window.loadDictionaryFile = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            processAndLoadData(data);
+                        } catch (error) {
+                            showMessage('JSON パース エラー: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        };
+
+        window.loadFromText = function() {
+            const jsonText = prompt('JSON ファイルの内容をここに貼り付けてください:');
+            if (jsonText) {
+                try {
+                    const data = JSON.parse(jsonText);
+                    processAndLoadData(data);
+                } catch (error) {
+                    showMessage('JSON パース エラー: ' + error.message, 'error');
+                }
+            }
+        };
+
+        function searchDictionary() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const resultsList = document.getElementById('resultsList');
+            const noResultsDiv = document.getElementById('noResults');
+
+            if (!resultsList || !dictionaryData.length) {
+                if (noResultsDiv) noResultsDiv.style.display = 'block';
+                return; 
+            }
+            
+            resultsList.innerHTML = ''; 
+
+            if (searchTerm.length < 1) {
+                noResultsDiv.style.display = 'none';
+                return;
+            }
+
+            let filteredResults = [];
+            
+            if (currentDirection === 'en-ja') {
+                // English -> Japanese: Match words starting with search term
+                filteredResults = dictionaryData.filter(entry => {
+                    const word = (entry.word || '').toLowerCase();
+                    return word.startsWith(searchTerm.toLowerCase());
+                });
+            } else {
+                // Japanese -> English: Match word_ja, definition_target, or example_target
+                filteredResults = dictionaryData.filter(entry => {
+                    const wordJa = entry.word_ja || '';
+                    const definitionJa = entry.definition_target || '';
+                    const exampleJa = entry.example_target || '';
+                    return wordJa.includes(searchTerm) || definitionJa.includes(searchTerm) || exampleJa.includes(searchTerm);
+                });
+            }
+
+            // Sort results
+            if (currentDirection === 'en-ja') {
+                filteredResults.sort((a, b) => (a.word || '').localeCompare(b.word || ''));
+            } else {
+                // Custom sort for ja-en: prioritize exact match, then startsWith, then includes
+                filteredResults.sort((a, b) => {
+                    const getPriority = (entry) => {
+                        const wordJa = entry.word_ja || '';
+                        const definitionJa = entry.definition_target || '';
+                        if (wordJa === searchTerm) return 0; // exact match on word_ja
+                        if (wordJa.startsWith(searchTerm)) return 1; // startsWith on word_ja
+                        if (definitionJa.startsWith(searchTerm)) return 2; // startsWith on definition_target
+                        return 3; // others (includes in example or elsewhere)
+                    };
+                    const priA = getPriority(a);
+                    const priB = getPriority(b);
+                    if (priA !== priB) return priA - priB;
+                    // If same priority, sort alphabetically
+                    return (a.word_ja || a.definition_target || '').localeCompare(b.word_ja || b.definition_target || '');
+                });
+            }
+            
+            // Limit to top 50 results
+            filteredResults = filteredResults.slice(0, 50);
+
+            if (filteredResults.length > 0) {
+                filteredResults.forEach(entry => {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item');
+                    
+                    if (currentDirection === 'en-ja') {
+                        // English -> Japanese display
+                        resultItem.innerHTML = `
+                            <div class="word-title">${entry.word || ''} 
+                                <span class="material-icons" style="font-size: 20px; cursor: pointer;" onclick="speakWord('${entry.word}', 'en')">volume_up</span>
+                            </div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            <div class="word-definition">${entry.definition_en || ''}</div>
+                            ${entry.example_en ? `<div class="word-example">"${entry.example_en}"</div>` : ''}
+                            ${entry.example_target ? `<div class="word-example-target">"${entry.example_target}"</div>` : ''}
+                                                       
+                        `;
+                    } else {
+                        // Japanese -> English display
+                        const displayWord = entry.word_ja || entry.definition_target || searchTerm;
+                        resultItem.innerHTML = `
+                            <div class="word-title">${displayWord} 
+                                <span class="material-icons" style="font-size: 20px; cursor: pointer;" onclick="speakWord('${displayWord}', 'ja')">volume_up</span>
+                            </div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            <div class="word-definition">${entry.word || ''}</div>
+                            ${entry.example_target ? `<div class="word-example-target">"${entry.example_target}"</div>` : ''}
+                            ${entry.example_en ? `<div class="word-example">"${entry.example_en}"</div>` : ''}
+                            </div>
+                        `;
+                    }
+                    
+                    resultsList.appendChild(resultItem);
+                });
+                noResultsDiv.style.display = 'none';
+            } else {
+                noResultsDiv.style.display = 'block';
+            }
+        }
+
+        function speakWord(word, lang) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = lang === 'ja' ? 'ja-JP' : 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = `
+                <div class="load-options-container">
+                    <h3>辞書データを読み込んでください。</h3>
+                    <p style="color:#9E9E9E; font-size:14px; margin-bottom:10px;">まずサーバー読み込みを試してください。</p>
+                    <button class="load-button server-load-btn" onclick="loadFromServer()">
+                        <span class="material-icons">cloud_download</span>
+                        サーバーから自動読み込み
+                    </button>
+                    <input type="file" id="fileInput" accept=".json" style="display: none;">
+                    <button class="load-button file-load-btn" onclick="document.getElementById('fileInput').click()">
+                        <span class="material-icons">folder_open</span>
+                        ファイル選択
+                    </button>
+                    <button class="load-button text-load-btn" onclick="loadFromText()">
+                        <span class="material-icons">edit_note</span>
+                        テキスト貼り付け
+                    </button>
+                </div>
+            `;
+            document.getElementById('fileInput').addEventListener('change', e => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = event => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+                            processAndLoadData(data);
+                        } catch (error) {
+                            showMessage('JSON パース エラー: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
