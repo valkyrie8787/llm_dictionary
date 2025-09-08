@@ -156,6 +156,14 @@
             color: #E0E0E0;
         }
 
+        .word-definition-target {
+            font-size: 17px;
+            line-height: 1.5;
+            margin-bottom: 14px;
+            color: #FFB3BA;
+            font-weight: 500;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
 
         .word-example {
             font-size: 16px;
@@ -177,66 +185,10 @@
             font-family: 'Noto Sans JP', sans-serif;
         }
 
-        .metadata-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .confidence-score {
-            color: #4CAF50;
-            font-weight: 600;
-        }
-
-        .rarity-score {
-            color: #FF9800;
-            font-weight: 600;
-        }
-
         .no-results {
             text-align: center;
             color: #9E9E9E;
             padding: 20px;
-        }
-
-        /* Statistics Display */
-        .stats-container {
-            background-color: #2E2E2E;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-        }
-
-        .stats-title {
-            font-size: 18px;
-            color: #BBDEFB;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .stat-item {
-            background-color: #3A3A3A;
-            padding: 8px;
-            border-radius: 6px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-weight: 700;
-            color: #FFB3BA;
-            font-size: 16px;
-        }
-
-        .stat-label {
-            color: #CCCCCC;
-            font-size: 12px;
         }
 
         /* File Load Options UI */
@@ -277,24 +229,30 @@
         /* Message Toast Styling */
         .message-toast {
             position: fixed;
-            top: 80px;
+            top: 150px; /* Adjusted from 80px to 150px for better visibility */
             left: 50%;
             transform: translateX(-50%);
             padding: 12px 20px;
             border-radius: 8px;
             color: white;
-            z-index: 2000;
+            z-index: 3000; /* Increased from 2000 for prominence */
             font-size: 16px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4); /* Slightly stronger shadow */
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
         }
         .message-toast.show {
             opacity: 1;
         }
-        .message-toast.success { background-color: #4CAF50; }
-        .message-toast.error { background-color: #F44336; }
-        .message-toast.info { background-color: #2196F3; }
+        .message-toast.success { 
+            background-color: #4CAF50; /* Maintained green for success */
+        }
+        .message-toast.error { 
+            background-color: #F44336;
+        }
+        .message-toast.info { 
+            background-color: #2196F3;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -389,9 +347,7 @@
         function displayDictionaryInterface() {
             const resultsContainer = document.getElementById('resultsContainer');
             
-            let interfaceHTML = '';
-            
-            interfaceHTML += '<div id="resultsList"></div><div id="noResults" class="no-results" style="display: none;">No results found.</div>';
+            let interfaceHTML = '<div id="resultsList"></div><div id="noResults" class="no-results" style="display: none;">No results found.</div>';
             
             resultsContainer.innerHTML = interfaceHTML;
             
@@ -520,10 +476,10 @@
                                 <span class="material-icons" style="font-size: 20px; cursor: pointer;" onclick="speakWord('${entry.word}', 'en')">volume_up</span>
                             </div>
                             <div class="word-pos">${entry.pos || ''}</div>
+                            ${entry.word_ja ? `<div class="word-definition-target">${entry.word_ja}</div>` : ''}
                             <div class="word-definition">${entry.definition_en || ''}</div>
                             ${entry.example_en ? `<div class="word-example">"${entry.example_en}"</div>` : ''}
                             ${entry.example_target ? `<div class="word-example-target">"${entry.example_target}"</div>` : ''}
-                                                       
                         `;
                     } else {
                         // Japanese -> English display
@@ -534,9 +490,9 @@
                             </div>
                             <div class="word-pos">${entry.pos || ''}</div>
                             <div class="word-definition">${entry.word || ''}</div>
+                            ${entry.definition_target ? `<div class="word-definition-target">${entry.definition_target}</div>` : ''}
                             ${entry.example_target ? `<div class="word-example-target">"${entry.example_target}"</div>` : ''}
                             ${entry.example_en ? `<div class="word-example">"${entry.example_en}"</div>` : ''}
-                            </div>
                         `;
                     }
                     
