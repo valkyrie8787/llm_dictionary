@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilingual Dictionary</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* 기본 CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Noto Sans KR', 'Noto Sans JP', sans-serif;
+        }
+        body {
+            background-color: #1A1A1A;
+            color: #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px; /* 이전보다 조금 작게 조정 */
+            background-color: #121212;
+            color: #E0E0E0;
+            border-bottom: 1px solid #333333;
+        }
+        .top-bar .title {
+            font-size: 28px; /* 이전보다 조금 작게 조정 */
+            font-weight: 500;
+        }
+
+        /* --- 언어 선택기 (크기 조정) --- */
+        .lang-selectors-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            padding: 26px; /* 이전보다 조금 작게 조정 */
+            background-color: #1A1A1A;
+        }
+        .lang-selectors {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px; /* 간격 조정 */
+        }
+        .lang-button {
+            padding: 18px 24px; /* 이전보다 조금 작게 조정 */
+            border: none;
+            border-radius: 12px;
+            background-color: #2E2E2E;
+            color: #E0E0E0;
+            font-size: 24px; /* 이전보다 조금 작게 조정 */
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            min-width: 200px; /* 최소 너비 조정 */
+        }
+        .lang-button.active {
+            background-color: #3F51B5;
+            color: white;
+        }
+        .lang-swap {
+            background: none;
+            border: none;
+            color: #9E9E9E;
+            font-size: 28px; /* 이전보다 조금 작게 조정 */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px; /* 이전과 동일 */
+            height: 52px; /* 이전과 동일 */
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .lang-swap:hover {
+            background-color: #333333;
+        }
+
+        /* --- 언어 선택 드롭다운 메뉴 (크기 조정) --- */
+        .lang-dropdown-menu {
+            display: none;
+            position: absolute;
+            z-index: 4000;
+            background-color: #2E2E2E;
+            border-radius: 12px;
+            width: 220px; /* 너비 조정 */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            padding: 8px;
+            margin-top: 4px; /* 간격 미세 조정 */
+        }
+        .lang-dropdown-menu ul { list-style: none; padding: 0; margin: 0; }
+        .lang-dropdown-menu li {
+            color: #E0E0E0;
+            padding: 14px 18px; /* 이전보다 조금 작게 조정 */
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 16px; /* 이전보다 조금 작게 조정 */
+        }
+        .lang-dropdown-menu li:hover { background-color: #3F51B5; }
+
+        /* 나머지 UI CSS (크기 조정) */
+        .input-area { flex-grow: 1; padding: 16px 24px 24px 24px; background-color: #1A1A1A; display: flex; flex-direction: column; align-items: flex-start; position: relative; }
+        .text-input { width: 100%; min-height: 120px; background-color: #1A1A1A; color: #E0E0E0; border: none; font-size: 28px; padding: 12px 0; resize: none; outline: none; } /* 크기 조정 */
+        .results-container { flex-grow: 1; padding: 24px; background-color: #1A1A1A; min-height: 200px; }
+        .result-item { background-color: #2E2E2E; padding: 20px 24px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); transition: transform 0.2s ease-in-out; }
+        .result-item:hover { transform: translateY(-3px); }
+        .word-title { font-size: 28px; font-weight: 700; color: #BBDEFB; margin-bottom: 8px; display: flex; align-items: center; }
+        .word-title .material-icons { font-size: 20px; margin-left: 10px; color: #9E9E9E; cursor: pointer; }
+        .word-pos { font-size: 16px; color: #BBDEFB; font-weight: 500; margin-bottom: 12px; }
+        .word-definition { font-size: 18px; line-height: 1.6; margin-bottom: 10px; color: #E0E0E0; }
+        .word-example { font-size: 16px; color: #B0B0B0; font-style: italic; border-left: 3px solid #64B5F6; padding-left: 12px; margin-top: 10px; margin-bottom: 8px; }
+        .word-example-target { font-size: 15px; color: #FFABAB; font-style: italic; border-left: 3px solid #FF8A95; padding-left: 12px; margin-top: 6px; }
+        .no-results { text-align: center; color: #9E9E9E; padding: 20px; font-size: 18px; }
+
+        /* --- 로드 옵션 컨테이너 (크기 확대) --- */
+        .load-options-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px; /* 간격 증가 */
+            width: 100%;
+            height: 100%;
+            padding-top: 80px; /* 상단 여백 증가 */
+        }
+        .load-options-container h3 {
+            font-size: 26px; /* 크기 증가 */
+            margin-bottom: 10px;
+        }
+        .load-options-container p {
+            font-size: 22px; /* 크기 증가 */
+            color: #B0B0B0;
+            margin-bottom: 30px; /* 하단 여백 증가 */
+        }
+        .load-button {
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 90%;
+            max-width: 350px;
+            justify-content: center;
+            white-space: nowrap; /* 버튼 내 텍스트 줄바꿈 방지 */
+        }
+        .load-button .material-icons {
+            font-size: 20px; /* 아이콘 크기 증가 */
+        }
+        .load-button:hover { transform: scale(1.05); }
+        .server-load-btn { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
+        .file-load-btn { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .text-load-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .message-toast { position: fixed; top: 150px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; color: white; z-index: 5000; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.5s ease-in-out; }
+        .message-toast.show { opacity: 1; }
+        .message-toast.success { background-color: #4CAF50; }
+        .message-toast.error { background-color: #F44336; }
+        .message-toast.info { background-color: #2196F3; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="title">Multilingual Dictionary</div>
+    </div>
+    
+    <div class="lang-selectors-wrapper">
+        <div class="lang-selectors">
+            <button class="lang-button active" id="langFromBtn" onclick="toggleLangDropdown(event, 'source')"></button>
+            <button class="lang-swap material-icons" onclick="swapLanguages()">swap_horiz</button>
+            <button class="lang-button" id="langToBtn" onclick="toggleLangDropdown(event, 'target')"></button>
+        </div>
+
+        <div id="langDropdown" class="lang-dropdown-menu">
+            <ul id="langList"></ul>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <textarea id="searchInput" class="text-input" placeholder="Loading dictionary data..."></textarea>
+    </div>
+
+    <div class="results-container" id="resultsContainer"></div>
+
+    <script>
+        let dictionaryData = [];
+        let sourceLang = 'en';
+        let targetLang = 'ja';
+        let currentDropdownType = null;
+        
+        const langConfig = {
+            'en': { name: 'English', voice: 'en-US', placeholder: 'Type in English...', loadingPrompt: 'Please load dictionary data first.', initialLoadPrompt: 'Please load dictionary data.', tryServerLoadPrompt: 'Try server load first.', loadFromServerBtn: 'Load from Server', selectFileBtn: 'Select File', pasteTextBtn: 'Paste Text' },
+            'ja': { name: '日本語', voice: 'ja-JP', placeholder: '日本語で入力してください...', loadingPrompt: '辞書データを先に読み込んでください。', initialLoadPrompt: '辞書データを読み込んでください。', tryServerLoadPrompt: 'まずサーバー読み込みを試してください。', loadFromServerBtn: 'サーバーから自動読み込み', selectFileBtn: 'ファイル選択', pasteTextBtn: 'テキスト貼り付け' },
+            'ko': { name: '한국어', voice: 'ko-KR', placeholder: '한국어로 입력해주세요...', loadingPrompt: '사전 데이터를 먼저 로드해주세요.', initialLoadPrompt: '사전 데이터를 로드해주세요.', tryServerLoadPrompt: '먼저 서버 로드를 시도해주세요。', loadFromServerBtn: '서버에서 자동 읽어오기', selectFileBtn: '파일 선택', pasteTextBtn: '텍스트 붙여넣기' },
+            'de': { name: 'German', voice: 'de-DE', placeholder: 'Geben Sie Deutsch ein...', loadingPrompt: 'Bitte laden Sie zuerst die Wörterbuchdaten.', initialLoadPrompt: 'Bitte laden Sie Wörterbuchdaten.', tryServerLoadPrompt: 'Versuchen Sie zuerst den Server-Load.', loadFromServerBtn: 'Vom Server laden', selectFileBtn: 'Datei auswählen', pasteTextBtn: 'Text einfügen' }
+        };
+
+        const availableLanguages = ['en', 'ja', 'ko', 'de'];
+
+        function toggleLangDropdown(event, type) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('langDropdown');
+            const langList = document.getElementById('langList');
+            
+            if (currentDropdownType === type && dropdown.style.display === 'block') {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            currentDropdownType = type;
+            const button = event.currentTarget;
+            const wrapper = document.querySelector('.lang-selectors-wrapper');
+            
+            const buttonRect = button.getBoundingClientRect();
+            const wrapperRect = wrapper.getBoundingClientRect();
+
+            dropdown.style.top = `${buttonRect.bottom - wrapperRect.top + 4}px`; /* 버튼 바로 아래 + 4px 간격 */
+            dropdown.style.left = `${buttonRect.left - wrapperRect.left}px`;
+            dropdown.style.display = 'block';
+
+            langList.innerHTML = '';
+            availableLanguages.forEach(lang => {
+                const li = document.createElement('li');
+                li.textContent = langConfig[lang].name;
+                li.onclick = () => selectLanguage(lang);
+                langList.appendChild(li);
+            });
+        }
+
+        function closeLangDropdown() {
+            document.getElementById('langDropdown').style.display = 'none';
+            currentDropdownType = null;
+        }
+
+        function selectLanguage(langCode) {
+            if (currentDropdownType === 'source') {
+                if (langCode === targetLang) { [sourceLang, targetLang] = [targetLang, sourceLang]; }
+                else { sourceLang = langCode; }
+            } else if (currentDropdownType === 'target') {
+                if (langCode === sourceLang) { [sourceLang, targetLang] = [targetLang, sourceLang]; }
+                else { targetLang = langCode; }
+            }
+            updateLangUI();
+            closeLangDropdown();
+            if (document.getElementById('searchInput').value.trim()) { searchDictionary(); }
+        }
+
+        document.addEventListener('click', (event) => {
+            const dropdown = document.getElementById('langDropdown');
+            if (dropdown.style.display === 'block' && !dropdown.contains(event.target) && !event.target.classList.contains('lang-button')) {
+                closeLangDropdown();
+            }
+        });
+
+        function showMessage(text, type) {
+            const toast = document.createElement('div');
+            toast.className = `message-toast ${type}`;
+            toast.textContent = text;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => { toast.classList.remove('show'); toast.addEventListener('transitionend', () => toast.remove()); }, 3000);
+        }
+
+        function updateLangUI() {
+            const langFromBtn = document.getElementById('langFromBtn');
+            const langToBtn = document.getElementById('langToBtn');
+            const searchInput = document.getElementById('searchInput');
+            langFromBtn.textContent = langConfig[sourceLang].name;
+            langToBtn.textContent = langConfig[targetLang].name;
+            langFromBtn.classList.add('active');
+            langToBtn.classList.remove('active');
+            if (dictionaryData.length > 0) { searchInput.placeholder = langConfig[sourceLang]?.placeholder || 'Type here...'; }
+            else { searchInput.placeholder = langConfig[sourceLang]?.loadingPrompt || 'Loading dictionary data...'; }
+            updateLoadingScreenText();
+        }
+
+        function updateLoadingScreenText() {
+            const loadOptionsContainer = document.querySelector('.load-options-container');
+            if (loadOptionsContainer) {
+                const langPack = langConfig[sourceLang] || langConfig['en'];
+                loadOptionsContainer.querySelector('h3').textContent = langPack.initialLoadPrompt;
+                loadOptionsContainer.querySelector('p').textContent = langPack.tryServerLoadPrompt;
+                document.getElementById('serverLoadBtn').innerHTML = `<span class="material-icons">cloud_download</span> ${langPack.loadFromServerBtn}`;
+                document.getElementById('fileLoadBtn').innerHTML = `<span class="material-icons">folder_open</span> ${langPack.selectFileBtn}`;
+                document.getElementById('textLoadBtn').innerHTML = `<span class="material-icons">edit_note</span> ${langPack.pasteTextBtn}`;
+            }
+        }
+        
+        function swapLanguages() {
+            [sourceLang, targetLang] = [targetLang, sourceLang];
+            updateLangUI();
+            if (document.getElementById('searchInput').value.trim()) { searchDictionary(); }
+        }
+        
+        function processAndLoadData(loadedData) {
+            if (!loadedData || !loadedData.entries || !Array.isArray(loadedData.entries)) {
+                showMessage('Unsupported or invalid data format.', 'error'); return;
+            }
+            dictionaryData = loadedData.entries;
+            showMessage(`Dictionary loaded! (${dictionaryData.length} entries)`, 'success');
+            displayDictionaryInterface();
+        }
+        function displayDictionaryInterface() {
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = '<div id="resultsList"></div><div id="noResults" class="no-results" style="display: none;">No results found.</div>';
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', searchDictionary);
+            updateLangUI();
+        }
+        async function loadFromServer() {
+            showMessage('Loading dictionary from server...', 'info');
+            try {
+                const response = await fetch('multilingual_dict.json');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json(); processAndLoadData(data);
+            } catch (error) {
+                console.error('Error loading from server:', error);
+                showMessage(`Failed to load from server: ${error.message}`, 'error');
+            }
+        }
+        function loadFromText() {
+            const jsonText = prompt('Please paste the JSON content here:');
+            if (jsonText) {
+                try {
+                    const data = JSON.parse(jsonText); processAndLoadData(data);
+                } catch (error) { showMessage('JSON Parse Error: ' + error.message, 'error'); }
+            }
+        }
+        function searchDictionary() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            const resultsList = document.getElementById('resultsList');
+            const noResultsDiv = document.getElementById('noResults');
+            if (!resultsList || !dictionaryData.length) { if(noResultsDiv) noResultsDiv.style.display = 'block'; return; }
+            resultsList.innerHTML = '';
+            if (!searchTerm) { noResultsDiv.style.display = 'none'; return; }
+            const filteredResults = dictionaryData.filter(entry => {
+                if (sourceLang === 'en') { return entry.word && entry.word.toLowerCase().startsWith(searchTerm); }
+                const translation = entry.translations?.[sourceLang];
+                if (!translation) return false;
+                const wordKey = 'word_' + sourceLang;
+                const word = translation[wordKey] || translation.definition || '';
+                return word.toLowerCase().includes(searchTerm);
+            }).slice(0, 50);
+            if (filteredResults.length > 0) {
+                filteredResults.forEach(entry => {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item');
+                    const sourceTranslation = entry.translations?.[sourceLang] || {};
+                    const targetTranslation = entry.translations?.[targetLang] || {};
+                    const targetWordKey = 'word_' + targetLang;
+                    const displayPos = entry.pos || '';
+                    const displayDef = (sourceLang === 'en') ? entry.definition_en : sourceTranslation.definition;
+                    const displayExample = (sourceLang === 'en') ? entry.example_en : sourceTranslation.example;
+                    const targetWord = (targetLang === 'en') ? entry.word : (targetTranslation[targetWordKey] || targetTranslation.definition || '');
+                    const targetExample = (targetLang === 'en') ? entry.example_en : targetTranslation.example;
+                    
+                    resultItem.innerHTML = `
+                        <div class="word-title">${targetWord||''} <span class="material-icons" onclick="speakWord('${(targetWord||'').replace(/'/g, "\\'")}', '${targetLang}')">volume_up</span></div>
+                        ${displayPos?`<div class="word-pos">${displayPos}</div>`:''}
+                        ${displayDef?`<div class="word-definition">${displayDef}</div>`:''}
+                        ${displayExample?`<div class="word-example">"${displayExample}"</div>`:''}
+                        ${targetExample?`<div class="word-example-target">"${targetExample}"</div>`:''}
+                    `;
+                    resultsList.appendChild(resultItem);
+                });
+                noResultsDiv.style.display = 'none';
+            } else { noResultsDiv.style.display = 'block'; }
+        }
+        function speakWord(word, langCode) {
+            if ('speechSynthesis' in window && word) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = langConfig[langCode]?.voice || 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = `
+                <div class="load-options-container">
+                    <h3></h3>
+                    <p></p>
+                    <button id="serverLoadBtn" class="load-button server-load-btn" onclick="loadFromServer()"></button>
+                    <input type="file" id="fileInput" accept=".json" style="display: none;">
+                    <button id="fileLoadBtn" class="load-button file-load-btn" onclick="document.getElementById('fileInput').click()"></button>
+                    <button id="textLoadBtn" class="load-button text-load-btn" onclick="loadFromText()"></button>
+                </div>
+            `;
+            document.getElementById('fileInput').addEventListener('change', e => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = event => {
+                        try {
+                            const data = JSON.parse(event.target.result); processAndLoadData(data);
+                        } catch (error) { showMessage('JSON Parse Error: ' + error.message, 'error'); }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            updateLangUI();
+        });
+    </script>
+</body>
+</html>
