@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English-German Dictionary</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* CSS Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Noto Sans', sans-serif;
+        }
+
+        body {
+            background-color: #1A1A1A;
+            color: #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            background-color: #121212;
+            color: #E0E0E0;
+            border-bottom: 1px solid #333333;
+        }
+
+        .top-bar .title {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        /* Language Selectors */
+        .lang-selectors {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            background-color: #1A1A1A;
+        }
+
+        .lang-button {
+            flex: 1;
+            max-width: 150px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            background-color: #2E2E2E;
+            color: #E0E0E0;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .lang-button.active {
+            background-color: #3F51B5;
+            color: white;
+        }
+
+        .lang-swap {
+            background: none;
+            border: none;
+            color: #9E9E9E;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .lang-swap:hover {
+            background-color: #333333;
+        }
+
+        /* Input Area */
+        .input-area {
+            flex-grow: 1;
+            padding: 0 16px 16px 16px;
+            background-color: #1A1A1A;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+        }
+        
+        .text-input {
+            width: 100%;
+            min-height: 120px;
+            background-color: #1A1A1A;
+            color: #E0E0E0;
+            border: none;
+            font-size: 24px;
+            padding: 12px 0;
+            resize: none;
+            outline: none;
+        }
+
+        /* Results / Output Area */
+        .results-container {
+            flex-grow: 1;
+            padding: 16px;
+            background-color: #1A1A1A;
+            min-height: 200px;
+        }
+        
+        .result-item {
+            background-color: #2E2E2E;
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease-in-out;
+        }
+        .result-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .word-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #BBDEFB;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .word-title .material-icons {
+            font-size: 20px;
+            margin-left: 10px;
+            color: #9E9E9E;
+            cursor: pointer;
+        }
+
+        .word-pos {
+            font-size: 16px;
+            color: #BBDEFB;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .word-definition {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            color: #E0E0E0;
+        }
+
+        .word-example {
+            font-size: 16px;
+            color: #B0B0B0;
+            font-style: italic;
+            border-left: 3px solid #64B5F6;
+            padding-left: 12px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+
+        .word-example-translation {
+            font-size: 15px;
+            color: #FFABAB;
+            font-style: italic;
+            border-left: 3px solid #FF8A95;
+            padding-left: 12px;
+            margin-top: 6px;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #9E9E9E;
+            padding: 20px;
+        }
+
+        /* File Load Options UI */
+        .load-options-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+            height: 100%;
+            padding-top: 50px;
+        }
+        .load-button {
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 80%;
+            max-width: 300px;
+            justify-content: center;
+        }
+        .load-button:hover {
+            transform: scale(1.05);
+        }
+        .server-load-btn { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
+        .file-load-btn { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .text-load-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+
+        /* Message Toast Styling */
+        .message-toast {
+            position: fixed;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            z-index: 3000;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-toast.show {
+            opacity: 1;
+        }
+        .message-toast.success { 
+            background-color: #4CAF50;
+        }
+        .message-toast.error { 
+            background-color: #F44336;
+        }
+        .message-toast.info { 
+            background-color: #2196F3;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="title">English-German Dictionary</div>
+    </div>
+
+    <div class="lang-selectors">
+        <button class="lang-button active" id="langFrom">English</button>
+        <button class="lang-swap material-icons" onclick="swapLanguages()">swap_horiz</button>
+        <button class="lang-button" id="langTo">Deutsch</button>
+    </div>
+
+    <div class="input-area">
+        <textarea id="searchInput" class="text-input" placeholder="Bitte laden Sie zuerst die Wörterbuchdaten."></textarea>
+    </div>
+
+    <div class="results-container" id="resultsContainer">
+    </div>
+
+    <script>
+        let dictionaryData = [];
+        let dictionaryMetadata = null;
+        let currentDirection = 'en-de'; // 'en-de' or 'de-en'
+
+        function showMessage(text, type) {
+            const toast = document.createElement('div');
+            toast.className = `message-toast ${type}`;
+            toast.textContent = text;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        // 입력이 독일어인지 확인하는 함수 
+        function isGerman(text) {
+            // 독일어 특수문자가 있는 경우는 확실히 독일어
+            const germanSpecialChars = /[äöüÄÖÜß]/;
+            if (germanSpecialChars.test(text)) {
+                return true;
+            }
+            
+            // 독일어 특수문자가 없는 경우, 현재 설정된 방향을 따름
+            // 사용자가 수동으로 Deutsch 모드로 설정했다면 독일어로 간주
+            return currentDirection === 'de-en';
+        }
+
+        function swapLanguages() {
+            const langFrom = document.getElementById('langFrom');
+            const langTo = document.getElementById('langTo');
+            
+            if (currentDirection === 'en-de') {
+                langFrom.textContent = 'Deutsch';
+                langTo.textContent = 'English';
+                currentDirection = 'de-en';
+            } else {
+                langFrom.textContent = 'English';
+                langTo.textContent = 'Deutsch';
+                currentDirection = 'en-de';
+            }
+            
+            langFrom.classList.add('active');
+            langTo.classList.remove('active');
+            
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput.value.trim() && dictionaryData.length > 0) {
+                searchDictionary();
+            }
+            
+            if (dictionaryData.length > 0) {
+                searchInput.placeholder = currentDirection === 'en-de' ? 
+                    'Type English words...' : 'Deutsche Wörter eingeben...';
+            }
+        }
+
+        function processAndLoadData(loadedData) {
+            if (!loadedData) {
+                showMessage('Daten sind leer oder ungültig.', 'error');
+                return;
+            }
+            
+            // Process new JSON structure
+            if (loadedData.entries && Array.isArray(loadedData.entries)) {
+                dictionaryData = loadedData.entries;
+                dictionaryMetadata = loadedData.metadata;
+            } else if (Array.isArray(loadedData)) {
+                dictionaryData = loadedData;
+            } else {
+                showMessage('Nicht unterstütztes Datenformat.', 'error');
+                return;
+            }
+            
+            showMessage(`Wörterbuch geladen! (${dictionaryData.length} Wörter)`, 'success');
+            
+            displayDictionaryInterface();
+        }
+
+        function displayDictionaryInterface() {
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            let interfaceHTML = '<div id="resultsList"></div><div id="noResults" class="no-results" style="display: none;">Keine Ergebnisse gefunden.</div>';
+            
+            resultsContainer.innerHTML = interfaceHTML;
+            
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', searchDictionary);
+            searchInput.placeholder = currentDirection === 'en-de' ? 
+                'Type English words...' : 'Deutsche Wörter eingeben...';
+        }
+
+        window.loadFromServer = async function() {
+            showMessage('Lade Wörterbuch vom Server...', 'info');
+            try {
+                const response = await fetch('dict_en_de_2letter.json');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                processAndLoadData(data);
+            } catch (error) {
+                console.error('Error loading from server:', error);
+                showMessage(`Server-Ladefehler: ${error.message}`, 'error');
+            }
+        };
+
+        window.loadDictionaryFile = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    showMessage('Datei wird gelesen...', 'info');
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            processAndLoadData(data);
+                        } catch (error) {
+                            showMessage('JSON-Parse-Fehler: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        };
+
+        window.loadFromText = function() {
+            const jsonText = prompt('JSON-Dateiinhalt hier einfügen:');
+            if (jsonText) {
+                try {
+                    const data = JSON.parse(jsonText);
+                    processAndLoadData(data);
+                } catch (error) {
+                    showMessage('JSON-Parse-Fehler: ' + error.message, 'error');
+                }
+            }
+        };
+
+        function searchDictionary() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const resultsList = document.getElementById('resultsList');
+            const noResultsDiv = document.getElementById('noResults');
+
+            if (!resultsList || !dictionaryData.length) {
+                if (noResultsDiv) noResultsDiv.style.display = 'block';
+                return; 
+            }
+            
+            resultsList.innerHTML = ''; 
+
+            if (searchTerm.length < 1) {
+                noResultsDiv.style.display = 'none';
+                return;
+            }
+
+            // 자동 언어 감지 및 검색 방향 설정
+            const isInputGerman = isGerman(searchTerm);
+            let searchDirection = currentDirection;
+
+            // 입력 언어와 현재 방향이 맞지 않으면 자동 조정
+            if (isInputGerman && currentDirection === 'en-de') {
+                // 독일어 입력인데 영어→독일어 모드면 자동으로 바꿈
+                searchDirection = 'de-en';
+            } else if (!isInputGerman && currentDirection === 'de-en') {
+                // 영어 입력인데 독일어→영어 모드면 자동으로 바꿈
+                searchDirection = 'en-de';
+            }
+
+            let filteredResults = [];
+            
+            if (searchDirection === 'en-de') {
+                // 영어 입력 → 독일어 번역 출력
+                filteredResults = dictionaryData.filter(entry => {
+                    const word = (entry.word || '').toLowerCase();
+                    return word.startsWith(searchTerm.toLowerCase());
+                });
+            } else {
+                // 독일어 입력 → 영어 번역 출력
+                filteredResults = dictionaryData.filter(entry => {
+                    const wordDe = entry.word_de || '';
+                    const definitionDe = entry.definition_target || '';
+                    const exampleDe = entry.example_target || '';
+                    return wordDe.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           definitionDe.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           exampleDe.toLowerCase().includes(searchTerm.toLowerCase());
+                });
+            }
+
+            // Sort results
+            if (searchDirection === 'en-de') {
+                filteredResults.sort((a, b) => (a.word || '').localeCompare(b.word || ''));
+            } else {
+                filteredResults.sort((a, b) => {
+                    const getPriority = (entry) => {
+                        const wordDe = (entry.word_de || '').toLowerCase();
+                        const definitionDe = (entry.definition_target || '').toLowerCase();
+                        const searchLower = searchTerm.toLowerCase();
+                        if (wordDe === searchLower) return 0;
+                        if (wordDe.startsWith(searchLower)) return 1;
+                        if (definitionDe.startsWith(searchLower)) return 2;
+                        return 3;
+                    };
+                    const priA = getPriority(a);
+                    const priB = getPriority(b);
+                    if (priA !== priB) return priA - priB;
+                    return (a.word_de || a.definition_target || '').localeCompare(b.word_de || b.definition_target || '');
+                });
+            }
+            
+            // Limit to top 50 results
+            filteredResults = filteredResults.slice(0, 50);
+
+            if (filteredResults.length > 0) {
+                filteredResults.forEach(entry => {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item');
+                    
+                    if (searchDirection === 'en-de') {
+                        // 영어 → 독일어: 독일어 번역을 제목으로
+                        const englishWord = entry.word || '';
+                        const germanTranslation = entry.word_de || '';
+                        
+                        resultItem.innerHTML = `
+                            <div class="word-title">${germanTranslation} 
+                                <span class="material-icons" style="font-size: 20px; cursor: pointer;" data-word="${germanTranslation}" data-lang="de" onclick="speakWordSafe(this)">volume_up</span>
+                            </div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            <div class="word-definition">${entry.definition_en || ''}</div>
+                            ${entry.example_en ? `<div class="word-example">"${entry.example_en}"</div>` : ''}
+                            ${entry.example_target ? `<div class="word-example-translation">"${entry.example_target}"</div>` : ''}
+                        `;
+                    } else {
+                        // 독일어 → 영어: 영어 번역을 제목으로
+                        const germanWord = entry.word_de || entry.definition_target || searchTerm;
+                        const englishTranslation = entry.word || '';
+                        
+                        resultItem.innerHTML = `
+                            <div class="word-title">${englishTranslation} 
+                                <span class="material-icons" style="font-size: 20px; cursor: pointer;" data-word="${englishTranslation}" data-lang="en" onclick="speakWordSafe(this)">volume_up</span>
+                            </div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            ${entry.definition_target ? `<div class="word-definition">${entry.definition_target}</div>` : ''}
+                            ${entry.example_target ? `<div class="word-example">"${entry.example_target}"</div>` : ''}
+                            ${entry.example_en ? `<div class="word-example-translation">"${entry.example_en}"</div>` : ''}
+                        `;
+                    }
+                    
+                    resultsList.appendChild(resultItem);
+                });
+                noResultsDiv.style.display = 'none';
+            } else {
+                noResultsDiv.style.display = 'block';
+            }
+        }
+
+        function speakWordSafe(element) {
+            const word = element.getAttribute('data-word');
+            const lang = element.getAttribute('data-lang');
+            speakWord(word, lang);
+        }
+
+        function speakWord(word, lang) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = lang === 'de' ? 'de-DE' : 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = `
+                <div class="load-options-container">
+                    <h3>Wörterbuchdaten laden</h3>
+                    <p style="color:#9E9E9E; font-size:14px; margin-bottom:10px;">Versuchen Sie zuerst das Server-Laden.</p>
+                    <button class="load-button server-load-btn" onclick="loadFromServer()">
+                        <span class="material-icons">cloud_download</span>
+                        Automatisch vom Server laden
+                    </button>
+                    <button class="load-button file-load-btn" onclick="loadDictionaryFile()">
+                        <span class="material-icons">folder_open</span>
+                        Datei auswählen
+                    </button>
+                    <button class="load-button text-load-btn" onclick="loadFromText()">
+                        <span class="material-icons">edit_note</span>
+                        Text einfügen
+                    </button>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
