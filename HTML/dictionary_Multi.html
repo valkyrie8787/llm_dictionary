@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Language Dictionary</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* CSS Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Noto Sans JP', 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background-color: #1A1A1A;
+            color: #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            background-color: #121212;
+            color: #E0E0E0;
+            border-bottom: 1px solid #333333;
+        }
+
+        .top-bar .title {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        /* Dictionary Type Selector */
+        .dict-type-selector {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            background-color: #1A1A1A;
+            border-bottom: 1px solid #333333;
+        }
+
+        .dict-type-button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #2E2E2E;
+            color: #E0E0E0;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .dict-type-button.active {
+            background-color: #FF6B35;
+            color: white;
+        }
+
+        /* Language Selectors */
+        .lang-selectors {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            background-color: #1A1A1A;
+        }
+
+        .lang-button {
+            flex: 1;
+            max-width: 150px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            background-color: #2E2E2E;
+            color: #E0E0E0;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .lang-button.active {
+            background-color: #3F51B5;
+            color: white;
+        }
+
+        .lang-swap {
+            background: none;
+            border: none;
+            color: #9E9E9E;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .lang-swap:hover {
+            background-color: #333333;
+        }
+
+        /* Input Area */
+        .input-area {
+            flex-grow: 1;
+            padding: 0 16px 16px 16px;
+            background-color: #1A1A1A;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+        }
+        
+        .text-input {
+            width: 100%;
+            min-height: 120px;
+            background-color: #1A1A1A;
+            color: #E0E0E0;
+            border: none;
+            font-size: 24px;
+            padding: 12px 0;
+            resize: none;
+            outline: none;
+        }
+
+        /* Results / Output Area */
+        .results-container {
+            flex-grow: 1;
+            padding: 16px;
+            background-color: #1A1A1A;
+            min-height: 200px;
+        }
+        
+        .result-item {
+            background-color: #2E2E2E;
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease-in-out;
+        }
+        .result-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .word-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #BBDEFB;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .word-title .material-icons {
+            font-size: 20px;
+            margin-left: 10px;
+            color: #9E9E9E;
+            cursor: pointer;
+        }
+
+        .word-pos {
+            font-size: 16px;
+            color: #BBDEFB;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .word-definition {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            color: #E0E0E0;
+        }
+
+        .word-example {
+            font-size: 16px;
+            color: #B0B0B0;
+            font-style: italic;
+            border-left: 3px solid #64B5F6;
+            padding-left: 12px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+
+        .word-example-translation {
+            font-size: 15px;
+            color: #FFABAB;
+            font-style: italic;
+            border-left: 3px solid #FF8A95;
+            padding-left: 12px;
+            margin-top: 6px;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #9E9E9E;
+            padding: 20px;
+        }
+
+        /* File Load Options UI */
+        .load-options-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+            height: 100%;
+            padding-top: 50px;
+        }
+        .load-button {
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 80%;
+            max-width: 300px;
+            justify-content: center;
+        }
+        .load-button:hover {
+            transform: scale(1.05);
+        }
+        .server-load-btn { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
+        .file-load-btn { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .text-load-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+
+        /* Message Toast Styling */
+        .message-toast {
+            position: fixed;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            z-index: 3000;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-toast.show {
+            opacity: 1;
+        }
+        .message-toast.success { 
+            background-color: #4CAF50;
+        }
+        .message-toast.error { 
+            background-color: #F44336;
+        }
+        .message-toast.info { 
+            background-color: #2196F3;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="title">Multi-Language Dictionary</div>
+    </div>
+
+    <div class="dict-type-selector">
+        <button class="dict-type-button active" onclick="switchDictType('en-ja')">English-Japanese</button>
+        <button class="dict-type-button" onclick="switchDictType('en-ko')">English-Korean</button>
+        <button class="dict-type-button" onclick="switchDictType('en-de')">English-German</button>
+    </div>
+
+    <div class="lang-selectors">
+        <button class="lang-button active" id="langFrom">English</button>
+        <button class="lang-swap material-icons" onclick="swapLanguages()">swap_horiz</button>
+        <button class="lang-button" id="langTo">日本語</button>
+    </div>
+
+    <div class="input-area">
+        <textarea id="searchInput" class="text-input" placeholder="사전 데이터를 먼저 읽어주세요."></textarea>
+    </div>
+
+    <div class="results-container" id="resultsContainer">
+    </div>
+
+    <script>
+        let dictionaryData = [];
+        let dictionaryMetadata = null;
+        let currentDictType = 'en-ja'; // 'en-ja', 'en-ko', 'en-de'
+        let currentDirection = 'en-ja'; // depends on dict type
+
+        // Dictionary configurations
+        const dictConfigs = {
+            'en-ja': {
+                title: 'English-Japanese Dictionary',
+                fromLang: 'English',
+                toLang: '日本語',
+                directions: ['en-ja', 'ja-en'],
+                filename: 'dict_ja_alpha_with_wordja_v3.json',
+                targetField: 'word_ja',
+                speechLang: 'ja-JP',
+                placeholder: {
+                    initial: '辞書データを先に読み込んでください。',
+                    en: 'Type English words...',
+                    target: '日本語で検索...'
+                },
+                messages: {
+                    loading: 'サーバーから辞書ファイルを読み込み中...',
+                    loaded: (count) => `辞書ファイル読み込み完了! (${count}語)`,
+                    noResults: 'No results found.',
+                    error: 'データが空または無効です。'
+                }
+            },
+            'en-ko': {
+                title: 'English-Korean Dictionary',
+                fromLang: 'English',
+                toLang: '한국어',
+                directions: ['en-ko', 'ko-en'],
+                filename: 'dict_en_ko_2letter.json',
+                targetField: 'word_kr',
+                speechLang: 'ko-KR',
+                placeholder: {
+                    initial: '사전 데이터를 먼저 읽어주세요.',
+                    en: 'Type English words...',
+                    target: '한국어로 검색...'
+                },
+                messages: {
+                    loading: '서버에서 사전 파일을 읽는 중...',
+                    loaded: (count) => `사전 파일 읽기 완료! (${count}개 단어)`,
+                    noResults: '검색 결과가 없습니다.',
+                    error: '데이터가 비어있거나 유효하지 않습니다.'
+                }
+            },
+            'en-de': {
+                title: 'English-German Dictionary',
+                fromLang: 'English',
+                toLang: 'Deutsch',
+                directions: ['en-de', 'de-en'],
+                filename: 'dict_en_de_2letter.json',
+                targetField: 'word_de',
+                speechLang: 'de-DE',
+                placeholder: {
+                    initial: 'Bitte laden Sie zuerst die Wörterbuchdaten.',
+                    en: 'Type English words...',
+                    target: 'Deutsche Wörter eingeben...'
+                },
+                messages: {
+                    loading: 'Lade Wörterbuch vom Server...',
+                    loaded: (count) => `Wörterbuch geladen! (${count} Wörter)`,
+                    noResults: 'Keine Ergebnisse gefunden.',
+                    error: 'Daten sind leer oder ungültig.'
+                }
+            }
+        };
+
+        function showMessage(text, type) {
+            const toast = document.createElement('div');
+            toast.className = `message-toast ${type}`;
+            toast.textContent = text;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        function switchDictType(dictType) {
+            // Update active button
+            document.querySelectorAll('.dict-type-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update current dict type
+            currentDictType = dictType;
+            currentDirection = dictConfigs[dictType].directions[0];
+            
+            // Update UI
+            updateLanguageButtons();
+            updateTitle();
+            updatePlaceholder();
+            
+            // Clear current data and search
+            dictionaryData = [];
+            clearResults();
+            showLoadInterface();
+        }
+
+        function updateLanguageButtons() {
+            const config = dictConfigs[currentDictType];
+            document.getElementById('langFrom').textContent = config.fromLang;
+            document.getElementById('langTo').textContent = config.toLang;
+            
+            document.getElementById('langFrom').classList.add('active');
+            document.getElementById('langTo').classList.remove('active');
+        }
+
+        function updateTitle() {
+            document.querySelector('.top-bar .title').textContent = dictConfigs[currentDictType].title;
+        }
+
+        function updatePlaceholder() {
+            const config = dictConfigs[currentDictType];
+            const searchInput = document.getElementById('searchInput');
+            
+            if (dictionaryData.length > 0) {
+                searchInput.placeholder = currentDirection.startsWith('en-') ? 
+                    config.placeholder.en : config.placeholder.target;
+            } else {
+                searchInput.placeholder = config.placeholder.initial;
+            }
+        }
+
+        // Language detection functions
+        function isTargetLanguage(text) {
+            switch (currentDictType) {
+                case 'en-ja':
+                    return /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+                case 'en-ko':
+                    return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(text);
+                case 'en-de':
+                    const germanSpecialChars = /[äöüÄÖÜß]/.test(text);
+                    return germanSpecialChars || currentDirection === 'de-en';
+                default:
+                    return false;
+            }
+        }
+
+        function swapLanguages() {
+            const config = dictConfigs[currentDictType];
+            const langFrom = document.getElementById('langFrom');
+            const langTo = document.getElementById('langTo');
+            
+            if (currentDirection === config.directions[0]) {
+                langFrom.textContent = config.toLang;
+                langTo.textContent = config.fromLang;
+                currentDirection = config.directions[1];
+            } else {
+                langFrom.textContent = config.fromLang;
+                langTo.textContent = config.toLang;
+                currentDirection = config.directions[0];
+            }
+            
+            langFrom.classList.add('active');
+            langTo.classList.remove('active');
+            
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput.value.trim() && dictionaryData.length > 0) {
+                searchDictionary();
+            }
+            
+            updatePlaceholder();
+        }
+
+        function processAndLoadData(loadedData) {
+            const config = dictConfigs[currentDictType];
+            
+            if (!loadedData) {
+                showMessage(config.messages.error, 'error');
+                return;
+            }
+            
+            if (loadedData.entries && Array.isArray(loadedData.entries)) {
+                dictionaryData = loadedData.entries;
+                dictionaryMetadata = loadedData.metadata;
+            } else if (Array.isArray(loadedData)) {
+                dictionaryData = loadedData;
+            } else {
+                showMessage(config.messages.error, 'error');
+                return;
+            }
+            
+            showMessage(config.messages.loaded(dictionaryData.length), 'success');
+            displayDictionaryInterface();
+        }
+
+        function displayDictionaryInterface() {
+            const config = dictConfigs[currentDictType];
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            let interfaceHTML = `<div id="resultsList"></div><div id="noResults" class="no-results" style="display: none;">${config.messages.noResults}</div>`;
+            
+            resultsContainer.innerHTML = interfaceHTML;
+            
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', searchDictionary);
+            updatePlaceholder();
+        }
+
+        function clearResults() {
+            const resultsList = document.getElementById('resultsList');
+            const noResultsDiv = document.getElementById('noResults');
+            
+            if (resultsList) resultsList.innerHTML = '';
+            if (noResultsDiv) noResultsDiv.style.display = 'none';
+        }
+
+        window.loadFromServer = async function() {
+            const config = dictConfigs[currentDictType];
+            showMessage(config.messages.loading, 'info');
+            try {
+                const response = await fetch(config.filename);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                processAndLoadData(data);
+            } catch (error) {
+                console.error('Error loading from server:', error);
+                showMessage(`Server error: ${error.message}`, 'error');
+            }
+        };
+
+        window.loadDictionaryFile = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    showMessage('파일을 읽는 중...', 'info');
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            processAndLoadData(data);
+                        } catch (error) {
+                            showMessage('JSON 파싱 오류: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        };
+
+        window.loadFromText = function() {
+            const jsonText = prompt('JSON 파일 내용을 여기에 붙여넣어 주세요:');
+            if (jsonText) {
+                try {
+                    const data = JSON.parse(jsonText);
+                    processAndLoadData(data);
+                } catch (error) {
+                    showMessage('JSON 파싱 오류: ' + error.message, 'error');
+                }
+            }
+        };
+
+        function searchDictionary() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const resultsList = document.getElementById('resultsList');
+            const noResultsDiv = document.getElementById('noResults');
+
+            if (!resultsList || !dictionaryData.length) {
+                if (noResultsDiv) noResultsDiv.style.display = 'block';
+                return; 
+            }
+            
+            resultsList.innerHTML = ''; 
+
+            if (searchTerm.length < 1) {
+                noResultsDiv.style.display = 'none';
+                return;
+            }
+
+            // Auto language detection and search direction
+            const isInputTarget = isTargetLanguage(searchTerm);
+            let searchDirection = currentDirection;
+            const config = dictConfigs[currentDictType];
+
+            if (isInputTarget && currentDirection === config.directions[0]) {
+                searchDirection = config.directions[1];
+            } else if (!isInputTarget && currentDirection === config.directions[1]) {
+                searchDirection = config.directions[0];
+            }
+
+            let filteredResults = [];
+            
+            if (searchDirection === config.directions[0]) {
+                // English -> Target
+                filteredResults = dictionaryData.filter(entry => {
+                    const word = (entry.word || '').toLowerCase();
+                    return word.startsWith(searchTerm.toLowerCase());
+                });
+            } else {
+                // Target -> English
+                filteredResults = dictionaryData.filter(entry => {
+                    const targetWord = entry[config.targetField] || '';
+                    const definitionTarget = entry.definition_target || '';
+                    const exampleTarget = entry.example_target || '';
+                    const searchLower = searchTerm.toLowerCase();
+                    
+                    return targetWord.toLowerCase().includes(searchLower) || 
+                           definitionTarget.toLowerCase().includes(searchLower) || 
+                           exampleTarget.toLowerCase().includes(searchLower);
+                });
+            }
+
+            // Sort results
+            if (searchDirection === config.directions[0]) {
+                filteredResults.sort((a, b) => (a.word || '').localeCompare(b.word || ''));
+            } else {
+                filteredResults.sort((a, b) => {
+                    const getPriority = (entry) => {
+                        const targetWord = (entry[config.targetField] || '').toLowerCase();
+                        const definitionTarget = (entry.definition_target || '').toLowerCase();
+                        const searchLower = searchTerm.toLowerCase();
+                        
+                        if (targetWord === searchLower) return 0;
+                        if (targetWord.startsWith(searchLower)) return 1;
+                        if (definitionTarget.startsWith(searchLower)) return 2;
+                        return 3;
+                    };
+                    const priA = getPriority(a);
+                    const priB = getPriority(b);
+                    if (priA !== priB) return priA - priB;
+                    return (a[config.targetField] || a.definition_target || '').localeCompare(b[config.targetField] || b.definition_target || '');
+                });
+            }
+            
+            filteredResults = filteredResults.slice(0, 50);
+
+            if (filteredResults.length > 0) {
+                filteredResults.forEach(entry => {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item');
+                    
+                    if (searchDirection === config.directions[0]) {
+                        // English -> Target
+                        const englishWord = entry.word || '';
+                        const targetTranslation = entry[config.targetField] || '';
+                        
+                        resultItem.innerHTML = `
+                            <div class="word-title">${targetTranslation} 
+                                <span class="material-icons" style="font-size: 20px; cursor: pointer;" data-word="${targetTranslation}" data-lang="${config.speechLang.split('-')[0]}" onclick="speakWordSafe(this)">volume_up</span>
+                            </div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            <div class="word-definition">${entry.definition_en || ''}</div>
+                            ${entry.example_en ? `<div class="word-example">"${entry.example_en}"</div>` : ''}
+                            ${entry.example_target ? `<div class="word-example-translation">"${entry.example_target}"</div>` : ''}
+                        `;
+                    } else {
+                        // Target -> English
+                        const targetWord = entry[config.targetField] || entry.definition_target || searchTerm;
+                        const englishTranslation = entry.word || '';
+                        
+                        resultItem.innerHTML = `
+                            <div class="word-title">${englishTranslation} 
+                                <span class="material-icons" style="font-size: 20px; cursor: pointer;" data-word="${englishTranslation}" data-lang="en" onclick="speakWordSafe(this)">volume_up</span>
+                            </div>
+                            <div class="word-pos">${entry.pos || ''}</div>
+                            ${entry.definition_target ? `<div class="word-definition">${entry.definition_target}</div>` : ''}
+                            ${entry.example_target ? `<div class="word-example">"${entry.example_target}"</div>` : ''}
+                            ${entry.example_en ? `<div class="word-example-translation">"${entry.example_en}"</div>` : ''}
+                        `;
+                    }
+                    
+                    resultsList.appendChild(resultItem);
+                });
+                noResultsDiv.style.display = 'none';
+            } else {
+                noResultsDiv.style.display = 'block';
+            }
+        }
+
+        function speakWordSafe(element) {
+            const word = element.getAttribute('data-word');
+            const lang = element.getAttribute('data-lang');
+            speakWord(word, lang);
+        }
+
+        function speakWord(word, lang) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                const langMap = {
+                    'ja': 'ja-JP',
+                    'ko': 'ko-KR', 
+                    'de': 'de-DE',
+                    'en': 'en-US'
+                };
+                utterance.lang = langMap[lang] || 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function showLoadInterface() {
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = `
+                <div class="load-options-container">
+                    <h3>사전 데이터를 읽어주세요</h3>
+                    <p style="color:#9E9E9E; font-size:14px; margin-bottom:10px;">먼저 서버 읽기를 시도해보세요.</p>
+                    <button class="load-button server-load-btn" onclick="loadFromServer()">
+                        <span class="material-icons">cloud_download</span>
+                        서버에서 자동 읽기
+                    </button>
+                    <button class="load-button file-load-btn" onclick="loadDictionaryFile()">
+                        <span class="material-icons">folder_open</span>
+                        파일 선택
+                    </button>
+                    <button class="load-button text-load-btn" onclick="loadFromText()">
+                        <span class="material-icons">edit_note</span>
+                        텍스트 붙여넣기
+                    </button>
+                </div>
+            `;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showLoadInterface();
+        });
+    </script>
+</body>
+</html>
