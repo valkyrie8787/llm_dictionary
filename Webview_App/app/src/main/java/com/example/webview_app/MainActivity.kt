@@ -11,9 +11,11 @@ import java.io.InputStreamReader
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val webView = WebView(this)
-        webView.settings.javaScriptEnabled = true
-        setContentView(webView)
+    val webView = WebView(this)
+    webView.settings.javaScriptEnabled = true
+    webView.settings.useWideViewPort = true
+    webView.settings.loadWithOverviewMode = true
+    setContentView(webView)
 
         // WebViewClient 설정: html이 완전히 로드된 후 JS 함수 호출
         webView.webViewClient = object : android.webkit.WebViewClient() {
