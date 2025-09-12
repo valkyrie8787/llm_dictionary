@@ -2,11 +2,7 @@
   "metadata": {
     "title": "Multilingual Dictionary (EN-JA-KO-DE)",
     "source_language": "en",
-    "target_languages": [
-      "ja",
-      "ko",
-      "de"
-    ],
+    "target_languages": ["ja", "ko", "de"],
     "total_entries": 3185
   },
   "entries": [
@@ -1266,7 +1262,7 @@
         "ko": {
           "definition": "앞에, 앞서",
           "example": "우리는 일정보다 앞서 나가야 한다.",
-          "word_ko": "우리"
+          "word_ko": "앞에"
         },
         "de": {
           "definition": "Vorwärts, vor dem Gegenstand oder in der Zeit.",
