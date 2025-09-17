@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">AI Translator</string>
+    <string name="title_home">RAG</string>
+    <string name="title_dashboard">Translator</string>
+    <string name="title_notifications">Settings</string>
+    
+    <!-- RAG Tab -->
+    <string name="import_file">Import .txt File</string>
+    <string name="file_imported">File imported successfully</string>
+    <string name="no_file_selected">No file selected</string>
+    <string name="error_reading_file">Error reading file</string>
+    
+    <!-- Translator Tab -->
+    <string name="my_language">My Language:</string>
+    <string name="target_language">Target Language:</string>
+    <string name="listen">Listen</string>
+    <string name="listening">Listening...</string>
+    <string name="play">Play</string>
+    <string name="question_label">Question:</string>
+    <string name="answer_label">Answer:</string>
+    <string name="processing">Processing...</string>
+    <string name="error_recording">Error with recording</string>
+    <string name="error_api">Error connecting to AI service</string>
+    
+    <!-- Languages -->
+    <string name="lang_english">English</string>
+    <string name="lang_korean">Korean</string>
+    <string name="lang_japanese">Japanese</string>
+    <string name="lang_chinese">Chinese</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_french">French</string>
+    <string name="lang_german">German</string>
+    <string name="lang_italian">Italian</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_russian">Russian</string>
+</resources>
