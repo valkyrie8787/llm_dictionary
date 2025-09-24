@@ -1,0 +1,17 @@
+# Pydantic for data validation
+pydantic
+
+# NLTK for WordNet access
+nltk
+
+# Sentence Transformers for embedding similarity
+sentence-transformers
+torch
+torchvision
+torchaudio
+
+# aiofiles for asynchronous file I/O
+aiofiles
+
+# tqdm for progress bars
+tqdm
