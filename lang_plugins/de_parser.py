@@ -1,76 +1,99 @@
-# dictionary_project/lang_plugins/de_parser.py (v2.2, Refactored)
+# dictionary_project/lang_plugins/de_parser.py
+# Copyright (c) 2025 [Your Name/Organization]
+# Licensed under the MIT License. See LICENSE file in the project root for details.
 
-# ✅ 수정: 새로 만든 표준 모듈 임포트
-from schemas.base import GermanFeatures, ValueField, Provenance, Inflection, PosType
-from utils.confidence import assign_confidence
+from schemas.base import GermanFeatures, Inflection, Provenance
+from utils.helpers import create_value_field, map_pos_tag
 from pydantic import BaseModel
 from typing import Optional, List, Dict
+import json
+from pathlib import Path
+import asyncio
 import logging
 
-# 로깅 설정
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# 입력 데이터 모델 정의
 class RawGermanData(BaseModel):
     word: str
-    source: str = "omw_v1" # ✅ 수정: 소스 이름을 confidence.py의 규칙과 일치시킴
+    source: str
     pos: Optional[str] = None
-    # ... (이하 RawGermanData의 다른 필드는 이전과 동일)
     gender: Optional[str] = None
     plural: Optional[str] = None
     declensions: Dict[str, str] = {}
     examples: List[str] = []
+    definition_target: Optional[str] = None
+    example_target: Optional[str] = None
     prompt_id: Optional[str] = None
     generated_by: str = "gpt-oss-120b-v1.0"
+    source_licenses: Optional[Dict[str, str]] = None
 
-# ✅ 추가: 원본 POS 태그를 표준 PosType으로 변환하는 함수
-def _map_pos_tag(raw_pos: Optional[str]) -> Optional[PosType]:
-    if not raw_pos:
-        return None
-    
-    mapping = {
-        "Substantiv": PosType.NOUN,
-        "Verb": PosType.VERB,
-        # ... 다른 독일어 품사 태그 매핑 추가 ...
-    }
-    
-    return mapping.get(raw_pos, PosType.OTHER) # 매핑에 없으면 OTHER로 처리
+async def parse_german_data(raw_data: RawGermanData) -> GermanFeatures:
+    if not raw_data.word:
+        raise ValueError("Field 'word' cannot be empty.")
+    provenance = Provenance(source=raw_data.source, prompt_id=raw_data.prompt_id, generated_by=raw_data.generated_by)
+    standard_pos = map_pos_tag(raw_data.pos, "de")
+    all_examples = raw_data.examples[:]
+    if raw_data.example_target:
+        all_examples.append(raw_data.example_target)
 
-
-def parse_german_data(raw_data: RawGermanData) -> GermanFeatures:
-    provenance = Provenance(...) # 이전과 동일
-
-    # ✅ 수정: 모든 confidence 값을 assign_confidence 함수로 할당
-    word_target_vf = ValueField(
-        value=raw_data.word,
-        provenance=provenance,
-        confidence=assign_confidence(raw_data.source, "word")
-    )
-
-    gender_vf = ValueField(
-        value=raw_data.gender,
-        provenance=provenance,
-        confidence=assign_confidence(raw_data.source, "gender")
-    ) if raw_data.gender else None
-
-    # ✅ 수정: 표준화된 PosType 사용
-    standard_pos = _map_pos_tag(raw_data.pos)
-    part_of_speech_vf = ValueField(
-        value=standard_pos.value if standard_pos else None,
-        provenance=provenance,
-        confidence=assign_confidence(raw_data.source, "pos")
-    ) if standard_pos else None
-    
-    # ... (plural, declensions, examples 등 다른 필드도 모두 assign_confidence 사용하도록 수정) ...
-    plural_vf = ValueField(...)
-    declension_table = [...]
-    examples = [...]
-    
     return GermanFeatures(
-        word_target=word_target_vf,
-        gender=gender_vf,
-        plural=plural_vf,
-        part_of_speech=part_of_speech_vf,
-        declension_table=declension_table,
-        examples=examples
+        word_target=await create_value_field(raw_data.word, "word", provenance, lang="de"),
+        part_of_speech=await create_value_field(standard_pos.value if standard_pos else None, "pos", provenance, lang="de"),
+        definition=await create_value_field(raw_data.definition_target, "definition", provenance, lang="de"),
+        gender=await create_value_field(raw_data.gender, "gender", provenance, lang="de"),
+        plural=await create_value_field(raw_data.plural, "plural", provenance, lang="de"),
+        declension_table=[
+            Inflection(form=await create_value_field(form, case, provenance, lang="de"), type=case)
+            async for case, form in raw_data.declensions.items()
+        ],
+        examples=[
+            await create_value_field(ex, "examples", provenance, lang="de")
+            async for ex in all_examples
+        ]
     )
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARNING)
+    async def main():
+        sample_data = RawGermanData(
+            word="Tisch",
+            source="omw_v1",
+            pos="Substantiv",
+            gender="m",
+            plural="Tische",
+            definition_target="Ein Möbelstück mit einer flachen Platte.",
+            source_licenses={"omw": "Princeton License"}
+        )
+        try:
+            parsed = await parse_german_data(sample_data)
+            print("--- German Parser Test ---")
+            print(parsed.json(indent=2, ensure_ascii=False))
+        except ValueError as e:
+            logger.error(f"Parsing error: {e}")
+
+        error_cases = [
+            RawGermanData(word="", source="omw_v1"),
+            RawGermanData(word="Tisch", source="omw_v1", pos="wrongpos")
+        ]
+        for case in error_cases:
+            try:
+                print(f"\n--- Error Case: {case} ---")
+                parsed = await parse_german_data(case)
+                print(parsed.json(indent=2))
+            except ValueError as e:
+                logger.warning(f"Test case failed: {e}")
+
+        json_path = Path("dict_de_2letter.json")
+        if json_path.exists():
+            with open(json_path, "r", encoding="utf-8") as f:
+                json_data = json.load(f)
+            for entry in json_data[:2]:
+                try:
+                    raw = RawGermanData(**entry)
+                    parsed = await parse_german_data(raw)
+                    print(f"\n--- JSON Test: {raw.word} ---")
+                    print(parsed.json(indent=2, ensure_ascii=False))
+                except ValueError as e:
+                    logger.warning(f"JSON test failed for {entry.get('word', 'unknown')}: {e}")
+
+    asyncio.run(main())

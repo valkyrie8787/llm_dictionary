@@ -2,50 +2,97 @@
 # Copyright (c) 2025 [Your Name/Organization]
 # Licensed under the MIT License. See LICENSE file in the project root for details.
 
-from schemas.base import SpanishFeatures, ValueField, Provenance, Inflection, PosType
+from schemas.base import SpanishFeatures, Inflection, Provenance
+from utils.helpers import create_value_field, map_pos_tag
 from pydantic import BaseModel
 from typing import Optional, List, Dict
+import json
+from pathlib import Path
+import asyncio
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class RawSpanishData(BaseModel):
     word: str
-    source: str = "omw_v1_spanish"
+    source: str
     pos: Optional[str] = None
     gender: Optional[str] = None
     number: Optional[str] = None
     verb_conjugations: Dict[str, str] = {}
     examples: List[str] = []
-    confidence_map: Dict[str, float] = {}
+    definition_target: Optional[str] = None
+    example_target: Optional[str] = None
     prompt_id: Optional[str] = None
     generated_by: str = "gpt-oss-120b-v1.0"
+    source_licenses: Optional[Dict[str, str]] = None
 
-def _create_value_field(value: Optional[str], key: str, provenance: Provenance, conf_map: Dict) -> Optional[ValueField]:
-    if value is not None:
-        confidence = conf_map.get(key, conf_map.get("default", 0.95))
-        return ValueField(value=value, provenance=provenance, confidence=confidence)
-    logging.debug(f"Missing '{key}' in raw_data")
-    return None
-
-def parse_spanish_data(raw_data: RawSpanishData) -> SpanishFeatures:
-    provenance = Provenance(
-        source=raw_data.source,
-        prompt_id=raw_data.prompt_id,
-        generated_by=raw_data.generated_by
-    )
-    word_target_vf = ValueField(value=raw_data.word, provenance=provenance, confidence=raw_data.confidence_map.get("word", 0.98))
-    gender_vf = _create_value_field(raw_data.gender, "gender", provenance, raw_data.confidence_map)
-    number_vf = _create_value_field(raw_data.number, "number", provenance, raw_data.confidence_map)
-    part_of_speech_vf = _create_value_field(raw_data.pos, "pos", provenance, raw_data.confidence_map)
-    verb_conjugations = [Inflection(form=_create_value_field(form, tense, provenance, raw_data.confidence_map), type=tense) for tense, form in raw_data.verb_conjugations.items()] if raw_data.verb_conjugations else []
-    examples = [_create_value_field(ex, "examples", provenance, raw_data.confidence_map) for ex in raw_data.examples] if raw_data.examples else []
+async def parse_spanish_data(raw_data: RawSpanishData) -> SpanishFeatures:
+    if not raw_data.word:
+        raise ValueError("Field 'word' cannot be empty.")
+    provenance = Provenance(source=raw_data.source, prompt_id=raw_data.prompt_id, generated_by=raw_data.generated_by)
+    standard_pos = map_pos_tag(raw_data.pos, "es")
+    all_examples = raw_data.examples[:]
+    if raw_data.example_target:
+        all_examples.append(raw_data.example_target)
 
     return SpanishFeatures(
-        word_target=word_target_vf,
-        part_of_speech=part_of_speech_vf,
-        gender=gender_vf,
-        number=number_vf,
-        verb_conjugations=verb_conjugations,
-        examples=examples
+        word_target=await create_value_field(raw_data.word, "word", provenance, lang="es"),
+        part_of_speech=await create_value_field(standard_pos.value if standard_pos else None, "pos", provenance, lang="es"),
+        definition=await create_value_field(raw_data.definition_target, "definition", provenance, lang="es"),
+        gender=await create_value_field(raw_data.gender, "gender", provenance, lang="es"),
+        number=await create_value_field(raw_data.number, "number", provenance, lang="es"),
+        verb_conjugations=[
+            Inflection(form=await create_value_field(form, tense, provenance, lang="es"), type=tense)
+            async for tense, form in raw_data.verb_conjugations.items()
+        ],
+        examples=[
+            await create_value_field(ex, "examples", provenance, lang="es")
+            async for ex in all_examples
+        ]
     )
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARNING)
+    async def main():
+        sample_data = RawSpanishData(
+            word="mesa",
+            source="omw_v1",
+            pos="nombre",
+            gender="f",
+            definition_target="Mueble compuesto de un tablero horizontal liso.",
+            source_licenses={"omw": "Princeton License"}
+        )
+        try:
+            parsed = await parse_spanish_data(sample_data)
+            print("--- Spanish Parser Test ---")
+            print(parsed.json(indent=2, ensure_ascii=False))
+        except ValueError as e:
+            logger.error(f"Parsing error: {e}")
+
+        error_cases = [
+            RawSpanishData(word="", source="omw_v1"),
+            RawSpanishData(word="mesa", source="omw_v1", pos="wrongpos")
+        ]
+        for case in error_cases:
+            try:
+                print(f"\n--- Error Case: {case} ---")
+                parsed = await parse_spanish_data(case)
+                print(parsed.json(indent=2))
+            except ValueError as e:
+                logger.warning(f"Test case failed: {e}")
+
+        json_path = Path("dict_es_2letter.json")
+        if json_path.exists():
+            with open(json_path, "r", encoding="utf-8") as f:
+                json_data = json.load(f)
+            for entry in json_data[:2]:
+                try:
+                    raw = RawSpanishData(**entry)
+                    parsed = await parse_spanish_data(raw)
+                    print(f"\n--- JSON Test: {raw.word} ---")
+                    print(parsed.json(indent=2, ensure_ascii=False))
+                except ValueError as e:
+                    logger.warning(f"JSON test failed for {entry.get('word', 'unknown')}: {e}")
+
+    asyncio.run(main())
